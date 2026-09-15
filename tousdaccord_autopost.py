@@ -372,6 +372,7 @@ def main():
     log("Génération du contenu (API Claude)...")
     content = sanitize_dashes(generate_content(cfg["ANTHROPIC_API_KEY"], recent_topics, trending_topics))
     log(f"Sujet proposé : {content['sujet']} (angle: {content['angle_type']})")
+      log(f"Analyse des tendances : {content.get('raisonnement_choix_angle', '(non fourni)')}")
 
     # --- Étape 1c : relecture qualité ---
     max_attempts = 3
