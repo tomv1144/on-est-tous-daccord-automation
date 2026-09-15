@@ -372,7 +372,7 @@ def main():
     log("Génération du contenu (API Claude)...")
     content = sanitize_dashes(generate_content(cfg["ANTHROPIC_API_KEY"], recent_topics, trending_topics))
     log(f"Sujet proposé : {content['sujet']} (angle: {content['angle_type']})")
-      log(f"Analyse des tendances : {content.get('raisonnement_choix_angle', '(non fourni)')}")
+    log(f"Analyse des tendances : {content.get('raisonnement_choix_angle', '(non fourni)')}")
 
     # --- Étape 1c : relecture qualité ---
     max_attempts = 3
@@ -453,6 +453,7 @@ def main():
         "sujet": content["sujet"],
         "angle_type": content["angle_type"],
         "based_on_trend": content.get("based_on_trend"),
+        "raisonnement_choix_angle": content.get("raisonnement_choix_angle"),
         "topic_tag": content["topic_tag"],
         "facebook_carousel_post_id": fb_carousel_result.get("id"),
         "facebook_reel_video_id": fb_video_result.get("id"),
