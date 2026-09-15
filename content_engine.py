@@ -246,6 +246,9 @@ Rejette (approved=false) si l'UN de ces problèmes est présent :
   "les habitudes des Français") au lieu de décrire UNE scène précise avec un détail concret (chiffre, mot exact,
   objet, durée). Une blague qui pourrait s'appliquer à n'importe quelle situation similaire, sans aucun détail
   qui ancre une scène précise, doit être rejetée : ce n'est pas drôle, c'est un titre d'article.
+- thought_text est encore mou ou édulcoré (contient "un peu", "plutôt", "je trouve que", "peut-être", ou toute
+  autre nuance polie) au lieu d'être une pensée brute et sans filtre. Une Pensée qui pourrait presque être dite
+  à voix haute sans choquer personne n'a pas assez de contraste avec La Parole : à rejeter.
 - topic_tag, thought_text ou spoken_text sont manquants, vides, ou beaucoup trop longs pour tenir sur un visuel
   (thought_text/spoken_text : plus de 18 mots).
 
