@@ -290,7 +290,7 @@ def _ig_wait_until_finished(creation_id, ig_token, label):
 
 def publish_instagram_carousel(ig_user_id, ig_token, image_urls, caption):
     child_ids = []
-    for image_url in image_urls:
+    for index, image_url in enumerate(image_urls):
         status, resp = http_json(
             f"https://graph.instagram.com/{FB_API_VERSION}/{ig_user_id}/media",
             {"Content-Type": "application/json"},
@@ -298,7 +298,12 @@ def publish_instagram_carousel(ig_user_id, ig_token, image_urls, caption):
         )
         if status != 200 or "id" not in resp:
             raise RuntimeError(f"Erreur création item carrousel Instagram ({status}) : {resp}")
-        child_ids.append(resp["id"])
+        child_id = resp["id"]
+        # On attend que Instagram ait fini de télécharger/traiter CHAQUE image avant
+        # de construire le conteneur carrousel : sinon l'appel média_publish arrive
+        # trop tôt et Instagram répond "Media ID is not available".
+        _ig_wait_until_finished(child_id, ig_token, f"item carrousel {index + 1}")
+        child_ids.append(child_id)
 
     status, resp = http_json(
         f"https://graph.instagram.com/{FB_API_VERSION}/{ig_user_id}/media",
@@ -308,6 +313,9 @@ def publish_instagram_carousel(ig_user_id, ig_token, image_urls, caption):
     if status != 200 or "id" not in resp:
         raise RuntimeError(f"Erreur création conteneur carrousel Instagram ({status}) : {resp}")
     carousel_id = resp["id"]
+
+    # Même logique pour le conteneur carrousel final lui-même avant de publier.
+    _ig_wait_until_finished(carousel_id, ig_token, "conteneur carrousel")
 
     status, resp = http_json(
         f"https://graph.instagram.com/{FB_API_VERSION}/{ig_user_id}/media_publish",
