@@ -175,8 +175,9 @@ INTERDITS ABSOLUS (contenu automatique, sans relecture humaine, donc zéro tolé
 CHAMPS À REMPLIR :
 - topic_tag : le petit badge affiché en haut du visuel, 2 à 5 mots, qui résume la situation (ex: "La réunion de
   trop", "Le repas de famille", "Le groupe WhatsApp du travail"), à la forme nominale, pas une phrase complète.
-- thought_text : LA phrase de "La Pensée", ce qui se pense en silence. Percutante, honnête, CONCRÈTE (un détail
-  précis plutôt qu'une généralité), 4 à 16 mots.
+- thought_text : LA phrase de "La Pensée", ce qui se pense en silence. Brute, sans filtre de politesse, CONCRÈTE
+  (un détail précis plutôt qu'une généralité), 4 à 16 mots. Jamais édulcorée par "un peu", "plutôt", "je trouve
+  que" ou une nuance polie.
 - spoken_text : LA phrase de "La Parole", ce qui est dit à voix haute dans la même situation. Doit créer un
   contraste clair et drôle avec thought_text (poli, hypocrite, minimisant, ou au contraire too-much) : c'est le
   mensonge social exact qu'on a tous déjà dit dans cette situation précise, pas une politesse générique. 4 à 16
