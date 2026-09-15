@@ -21,5 +21,17 @@
     "facebook_reel_video_id": "1795895328499537",
     "instagram_carousel_media_id": "17968654458154564",
     "instagram_reel_media_id": "18161909740486045"
+  },
+  {
+    "date": "2026-09-15T19:44:15",
+    "sujet": "Le colis livré \"devant la porte\" mais introuvable",
+    "angle_type": "intemporel",
+    "based_on_trend": "",
+    "raisonnement_choix_angle": "Aucune tendance du jour n'a été fournie (liste vide), donc impossible d'appliquer le test buzz_actu ; je pars sur un angle intemporel bien identifiable, en évitant les deux sujets déjà traités (télétravail, repas de famille), en choisissant une scène précise du quotidien : le service client au téléphone pour un colis \"livré\" mais absent.",
+    "topic_tag": "Le colis \"livré\" introuvable",
+    "facebook_carousel_post_id": "1247179211821578_122098333821481224",
+    "facebook_reel_video_id": "1429453902370700",
+    "instagram_carousel_media_id": "17946805389298751",
+    "instagram_reel_media_id": "18128824507801696"
   }
 ]
