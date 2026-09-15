@@ -166,7 +166,7 @@ def slide_character(topic_tag, headline, char_filename, label, output_path):
     draw_label_pill(draw, label, center_x, char_bottom_y + 20)
     draw_footer_logo(base, draw)
 
-    base.save(output_path, "PNG")
+    base.save(output_path, "JPEG", quality=92)
     return output_path
 
 
@@ -210,7 +210,7 @@ def slide_cta(closing_line, output_path):
     base.paste(parole, (start_x + pensee.width + gap, top_y), parole)
 
     draw_footer_logo(base, draw)
-    base.save(output_path, "PNG")
+    base.save(output_path, "JPEG", quality=92)
     return output_path
 
 
@@ -218,9 +218,11 @@ def slide_cta(closing_line, output_path):
 
 def generate_carousel(topic_tag, thought_text, spoken_text, out_dir, closing_line="On est tous d'accord ?"):
     os.makedirs(out_dir, exist_ok=True)
-    p1 = slide_character(topic_tag, thought_text, "la_pensee.png", "La Pensée", os.path.join(out_dir, "slide_1.png"))
-    p2 = slide_character(topic_tag, spoken_text, "la_parole.png", "La Parole", os.path.join(out_dir, "slide_2.png"))
-    p3 = slide_cta(closing_line, os.path.join(out_dir, "slide_3.png"))
+    # Format JPEG obligatoire : Instagram refuse le PNG pour les items de carrousel
+    # ("Only photo or video can be accepted as media type").
+    p1 = slide_character(topic_tag, thought_text, "la_pensee.png", "La Pensée", os.path.join(out_dir, "slide_1.jpg"))
+    p2 = slide_character(topic_tag, spoken_text, "la_parole.png", "La Parole", os.path.join(out_dir, "slide_2.jpg"))
+    p3 = slide_cta(closing_line, os.path.join(out_dir, "slide_3.jpg"))
     return [p1, p2, p3]
 
 
@@ -230,9 +232,9 @@ def generate_reel_frames(topic_tag, thought_text, spoken_text, out_dir, closing_
     os.makedirs(out_dir, exist_ok=True)
     set_canvas(1080, 1920)
     try:
-        p1 = slide_character(topic_tag, thought_text, "la_pensee.png", "La Pensée", os.path.join(out_dir, "reel_1.png"))
-        p2 = slide_character(topic_tag, spoken_text, "la_parole.png", "La Parole", os.path.join(out_dir, "reel_2.png"))
-        p3 = slide_cta(closing_line, os.path.join(out_dir, "reel_3.png"))
+        p1 = slide_character(topic_tag, thought_text, "la_pensee.png", "La Pensée", os.path.join(out_dir, "reel_1.jpg"))
+        p2 = slide_character(topic_tag, spoken_text, "la_parole.png", "La Parole", os.path.join(out_dir, "reel_2.jpg"))
+        p3 = slide_cta(closing_line, os.path.join(out_dir, "reel_3.jpg"))
     finally:
         set_canvas(1080, 1350)  # on remet la taille par défaut (carrousel) pour ne pas perturber le reste
     return [p1, p2, p3]
