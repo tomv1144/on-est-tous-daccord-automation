@@ -23,11 +23,16 @@ import urllib.request
 import urllib.error
 
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
-ANTHROPIC_MODEL = "claude-haiku-4-5"
+# Claude Sonnet 5 pour la partie créative (l'humour a besoin d'un modèle plus
+# fort que Haiku, qui a tendance à sortir des vannes plates/génériques). Le
+# coût reste négligeable : un seul appel par jour, quelques centaines de mots
+# en sortie, quelques centimes par mois.
+ANTHROPIC_MODEL = "claude-sonnet-5"
 ANTHROPIC_VERSION = "2023-06-01"
 
 TEXT_FIELDS = ["topic_tag", "thought_text", "spoken_text", "closing_line",
-               "caption_instagram", "caption_facebook", "engagement_prompt"]
+               "caption_instagram", "caption_facebook", "engagement_prompt",
+               "raisonnement_choix_angle"]
 
 
 def sanitize_dashes(content):
@@ -83,21 +88,69 @@ rédiges UN SEUL contenu, réutilisé pour les deux formats.
 TON : direct, familier, mais WRITTEN pour être lu en gros sur une image (pas un script parlé). Des phrases
 courtes. Jamais compliqué, jamais un mot recherché.
 
+RÈGLE LA PLUS IMPORTANTE : LA PRÉCISION, PAS LA GÉNÉRALITÉ. Le principal défaut qui tue une blague, c'est de
+rester sur un thème général au lieu de décrire UNE scène précise avec un détail concret (un chiffre, un mot
+exact qu'on dit, un objet, une durée). "Les réunions qui durent trop longtemps" n'est pas une scène, c'est un
+titre d'article. "Ça fait 40 minutes qu'on refait le même point pour la 3e fois" est une scène. Si ton
+topic_tag ressemble à un titre de liste ("les habitudes des Français au travail", "les résolutions du nouvel
+an"), c'est raté : redécoupe jusqu'à trouver LE moment précis où ça se joue.
+
+Voici des exemples du niveau de précision et de contraste attendu (des exemples de TON à suivre, jamais à
+recopier : invente un sujet et une scène différents à chaque fois) :
+
+Exemple 1 — sujet "la réunion Zoom qui aurait pu être un mail"
+  La Pensée : "Ça fait 40 minutes qu'on répète le même point."
+  La Parole : "Super réunion, on est hyper alignés, merci à tous !"
+
+Exemple 2 — sujet "le groupe WhatsApp de la famille"
+  La Pensée : "Encore un bonjour avec douze GIFs à 7h du matin."
+  La Parole : "Haha trop mignon, merci Maman !"
+
+Exemple 3 — sujet "la commande à emporter en retard"
+  La Pensée : "Si dans 5 minutes ça arrive pas, j'annule et je me fais des pâtes."
+  La Parole : "Pas de souci du tout, prenez votre temps !"
+
+Exemple 4 — sujet "le collègue qui met toute l'équipe en copie pour rien"
+  La Pensée : "Il avait besoin de mettre 14 personnes en copie pour ça ?"
+  La Parole : "Merci pour ce retour, super complet !"
+
+Dans ces exemples, La Parole n'est pas juste "une phrase polie" au hasard : c'est le mensonge social exact que
+tout le monde a déjà dit dans cette situation précise. Vise ce niveau-là : si un lecteur ne peut pas s'imaginer
+la scène en 1 seconde, recommence.
+
 MATIÈRE PREMIÈRE : tu reçois une liste de sujets qui buzzent aujourd'hui en France (recherches Google Trends).
-- Tu as le droit de t'appuyer sur un de ces sujets UNIQUEMENT s'il concerne du divertissement, de la pop culture,
-  du sport, une sortie de film/série, de la musique, un buzz internet léger, une anecdote people, un événement
-  sportif, une tendance de consommation, la météo, ou une situation du quotidien que l'actualité illustre bien.
-- INTERDIT ABSOLU de t'appuyer sur un sujet politique, religieux, un fait divers grave, un drame, une catastrophe,
-  un conflit, ou tout sujet qui pourrait diviser ou heurter une partie du public. Si TOUS les sujets de la liste
-  sont de ce type, ou si aucun sujet ne se prête vraiment à une "Pensée vs Parole" sympa, ignore complètement la
-  liste et pars sur un angle intemporel (voir ci-dessous).
-- Angles intemporels toujours disponibles en secours : la vie de couple, la vie au travail (réunions, mails,
-  open-space), les repas de famille, les groupes WhatsApp, les transports, la flemme, les résolutions jamais
-  tenues, les habitudes de consommation (Netflix, livraison, réseaux sociaux), les phrases de politesse qu'on dit
-  sans les penser, les petites hypocrisies du quotidien.
-- Ne cite JAMAIS le nom d'une personne réelle précise (politique, célébrité) dans une blague qui lui attribue des
-  propos ou un comportement inventé. Tu peux évoquer un événement public connu de façon neutre (ex: "la sortie du
-  nouveau film Marvel") sans inventer de citation ni te moquer personnellement de quelqu'un.
+
+PROCESSUS OBLIGATOIRE, à faire mentalement avant de rédiger quoi que ce soit :
+1. Passe en revue CHAQUE sujet de la liste, un par un. Pour chacun, élimine-le immédiatement s'il est politique,
+   religieux, un fait divers grave, un drame, une catastrophe, un conflit, ou tout sujet qui pourrait diviser ou
+   heurter une partie du public.
+2. Pour chaque sujet restant, évalue honnêtement son potentiel comique : est-ce qu'il fait naître une scène
+   "Pensée vs Parole" précise et immédiate (voir la règle de précision ci-dessus), ou est-ce qu'il reste vague,
+   tiré par les cheveux, ou seulement "vaguement lié" ? Sois exigeant : un sujet qui t'oblige à forcer le lien
+   n'est pas un bon sujet.
+3. S'il existe au moins un sujet qui donne vraiment une scène drôle et précise, choisis le MEILLEUR d'entre eux
+   et pars sur "buzz_actu" : un contenu ancré dans l'actualité du jour a plus de portée qu'un sujet intemporel,
+   donc priorise-le chaque fois qu'un sujet s'y prête vraiment.
+4. Si aucun sujet de la liste ne passe ce test (tous éliminés à l'étape 1, ou aucun ne donne une scène vraiment
+   bonne à l'étape 2), pars sur un angle intemporel plutôt que de forcer un sujet tendance qui ne marche pas.
+   Un bon sujet intemporel bat toujours un sujet tendance forcé.
+
+Dans le champ raisonnement_choix_angle, résume en une phrase ce passage en revue : quels sujets tendance tu as
+considérés et pourquoi tu as retenu (ou écarté) chacun. Ça doit refléter une vraie comparaison, pas une phrase
+vague du type "j'ai choisi un sujet intemporel".
+
+Catégories de sujets tendance exploitables (si le test ci-dessus est passé) : divertissement, pop culture,
+sport, sortie de film/série, musique, buzz internet léger, anecdote people, événement sportif, tendance de
+consommation, météo, ou situation du quotidien que l'actualité illustre bien.
+
+Angles intemporels toujours disponibles en secours : la vie de couple, la vie au travail (réunions, mails,
+open-space), les repas de famille, les groupes WhatsApp, les transports, la flemme, les résolutions jamais
+tenues, les habitudes de consommation (Netflix, livraison, réseaux sociaux), les phrases de politesse qu'on dit
+sans les penser, les petites hypocrisies du quotidien.
+
+Ne cite JAMAIS le nom d'une personne réelle précise (politique, célébrité) dans une blague qui lui attribue des
+propos ou un comportement inventé. Tu peux évoquer un événement public connu de façon neutre (ex: "la sortie du
+nouveau film Marvel") sans inventer de citation ni te moquer personnellement de quelqu'un.
 
 INTERDITS ABSOLUS (contenu automatique, sans relecture humaine, donc zéro tolérance) :
 - Le tiret cadratin "—" ou demi-cadratin "–" : STRICTEMENT INTERDIT, aucune exception. Utilise virgules,
@@ -112,9 +165,12 @@ INTERDITS ABSOLUS (contenu automatique, sans relecture humaine, donc zéro tolé
 CHAMPS À REMPLIR :
 - topic_tag : le petit badge affiché en haut du visuel, 2 à 5 mots, qui résume la situation (ex: "La réunion de
   trop", "Le repas de famille", "Le groupe WhatsApp du travail"), à la forme nominale, pas une phrase complète.
-- thought_text : LA phrase de "La Pensée", ce qui se pense en silence. Percutante, honnête, 4 à 16 mots.
+- thought_text : LA phrase de "La Pensée", ce qui se pense en silence. Percutante, honnête, CONCRÈTE (un détail
+  précis plutôt qu'une généralité), 4 à 16 mots.
 - spoken_text : LA phrase de "La Parole", ce qui est dit à voix haute dans la même situation. Doit créer un
-  contraste clair et drôle avec thought_text (poli, hypocrite, minimisant, ou au contraire too-much). 4 à 16 mots.
+  contraste clair et drôle avec thought_text (poli, hypocrite, minimisant, ou au contraire too-much) : c'est le
+  mensonge social exact qu'on a tous déjà dit dans cette situation précise, pas une politesse générique. 4 à 16
+  mots.
 - closing_line : la relance de la dernière image/du reel, une variation autour de "On est tous d'accord ?"
   (tu peux garder cette phrase telle quelle la plupart du temps, ou proposer une petite variante collée au sujet
   du jour, du type "Dites-moi que c'est pas que moi." ou "On est bien d'accord ?"). Toujours une question courte.
@@ -124,6 +180,8 @@ CHAMPS À REMPLIR :
 - sujet : résumé en une courte phrase, pour l'historique.
 - angle_type : "buzz_actu" si basé sur une tendance du jour, "intemporel" sinon.
 - based_on_trend : le sujet tendance utilisé s'il y en a un, sinon "".
+- raisonnement_choix_angle : une phrase qui résume ton passage en revue des tendances (voir le PROCESSUS
+  OBLIGATOIRE ci-dessus) et pourquoi tu as retenu cet angle plutôt qu'un autre.
 - engagement_prompt : une courte invitation à réagir en commentaire (ex: "Dis OUI en commentaire si t'es
   d'accord", "Tag quelqu'un qui fait pareil"), à glisser naturellement dans une des légendes plutôt qu'ajoutée
   à part.
@@ -140,6 +198,7 @@ GENERATION_TOOL = {
             "angle_type": {"type": "string", "enum": ["buzz_actu", "intemporel"]},
             "sujet": {"type": "string"},
             "based_on_trend": {"type": "string"},
+            "raisonnement_choix_angle": {"type": "string"},
             "topic_tag": {"type": "string"},
             "thought_text": {"type": "string"},
             "spoken_text": {"type": "string"},
@@ -150,7 +209,7 @@ GENERATION_TOOL = {
             "hashtags": {"type": "array", "items": {"type": "string"}},
         },
         "required": [
-            "angle_type", "sujet", "based_on_trend", "topic_tag", "thought_text",
+            "angle_type", "sujet", "based_on_trend", "raisonnement_choix_angle", "topic_tag", "thought_text",
             "spoken_text", "closing_line", "caption_instagram",
             "caption_facebook", "engagement_prompt", "hashtags",
         ],
@@ -172,6 +231,10 @@ Rejette (approved=false) si l'UN de ces problèmes est présent :
   en fait la même chose) au point qu'il n'y a clairement aucune raison de publier ce post.
 - Le texte sonne artificiel/écrit par une IA plutôt que par une vraie personne (phrases trop parfaites,
   vocabulaire trop soutenu pour ce compte).
+- topic_tag, thought_text ou spoken_text restent au niveau d'un thème général ("les réunions interminables",
+  "les habitudes des Français") au lieu de décrire UNE scène précise avec un détail concret (chiffre, mot exact,
+  objet, durée). Une blague qui pourrait s'appliquer à n'importe quelle situation similaire, sans aucun détail
+  qui ancre une scène précise, doit être rejetée : ce n'est pas drôle, c'est un titre d'article.
 - topic_tag, thought_text ou spoken_text sont manquants, vides, ou beaucoup trop longs pour tenir sur un visuel
   (thought_text/spoken_text : plus de 18 mots).
 
