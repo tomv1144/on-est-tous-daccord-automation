@@ -88,35 +88,45 @@ rédiges UN SEUL contenu, réutilisé pour les deux formats.
 TON : direct, familier, mais WRITTEN pour être lu en gros sur une image (pas un script parlé). Des phrases
 courtes. Jamais compliqué, jamais un mot recherché.
 
-RÈGLE LA PLUS IMPORTANTE : LA PRÉCISION, PAS LA GÉNÉRALITÉ. Le principal défaut qui tue une blague, c'est de
+RÈGLE LA PLUS IMPORTANTE N°1 : LA PRÉCISION, PAS LA GÉNÉRALITÉ. Le principal défaut qui tue une blague, c'est de
 rester sur un thème général au lieu de décrire UNE scène précise avec un détail concret (un chiffre, un mot
 exact qu'on dit, un objet, une durée). "Les réunions qui durent trop longtemps" n'est pas une scène, c'est un
 titre d'article. "Ça fait 40 minutes qu'on refait le même point pour la 3e fois" est une scène. Si ton
 topic_tag ressemble à un titre de liste ("les habitudes des Français au travail", "les résolutions du nouvel
 an"), c'est raté : redécoupe jusqu'à trouver LE moment précis où ça se joue.
 
-Voici des exemples du niveau de précision et de contraste attendu (des exemples de TON à suivre, jamais à
-recopier : invente un sujet et une scène différents à chaque fois) :
+RÈGLE LA PLUS IMPORTANTE N°2 : LA PENSÉE DOIT ÊTRE BRUTE, PAS ÉDULCORÉE. thought_text n'est pas "la version un
+peu moins polie" de spoken_text, c'est la pensée la plus honnête, la plus directe, la moins flatteuse pour la
+personne qui la pense, sans aucun filtre de politesse. Le but n'est PAS d'être vulgaire ou méchant (toujours
+interdit, voir plus bas), c'est d'être sans détour : zéro mot édulcorant ("un peu", "plutôt", "je trouve que",
+"peut-être", "disons que"), zéro hésitation, zéro nuance polie. Une pensée molle ou hésitante rate la blague
+aussi sûrement qu'une pensée trop vague. Si ta première version de thought_text pourrait presque être dite à
+voix haute sans choquer personne, elle n'est pas assez brute : recommence en enlevant tous les amortisseurs.
+
+Voici des exemples du niveau de précision, de brutalité (sans vulgarité) et de contraste attendu (des exemples
+de TON à suivre, jamais à recopier : invente un sujet et une scène différents à chaque fois) :
 
 Exemple 1 — sujet "la réunion Zoom qui aurait pu être un mail"
-  La Pensée : "Ça fait 40 minutes qu'on répète le même point."
+  La Pensée : "Je t'écoute plus, je réponds à mes mails depuis dix minutes."
   La Parole : "Super réunion, on est hyper alignés, merci à tous !"
 
 Exemple 2 — sujet "le groupe WhatsApp de la famille"
-  La Pensée : "Encore un bonjour avec douze GIFs à 7h du matin."
+  La Pensée : "Je lis même plus les messages, je scrolle juste pour mettre un like."
   La Parole : "Haha trop mignon, merci Maman !"
 
 Exemple 3 — sujet "la commande à emporter en retard"
-  La Pensée : "Si dans 5 minutes ça arrive pas, j'annule et je me fais des pâtes."
+  La Pensée : "Dans 5 minutes j'annule et je me fais des pâtes, tant pis pour le remboursement."
   La Parole : "Pas de souci du tout, prenez votre temps !"
 
 Exemple 4 — sujet "le collègue qui met toute l'équipe en copie pour rien"
-  La Pensée : "Il avait besoin de mettre 14 personnes en copie pour ça ?"
+  La Pensée : "Il s'est senti important en mettant 14 personnes en copie pour ça."
   La Parole : "Merci pour ce retour, super complet !"
 
-Dans ces exemples, La Parole n'est pas juste "une phrase polie" au hasard : c'est le mensonge social exact que
-tout le monde a déjà dit dans cette situation précise. Vise ce niveau-là : si un lecteur ne peut pas s'imaginer
-la scène en 1 seconde, recommence.
+Remarque le niveau de franchise de La Pensée dans ces exemples : elle admet un truc pas glorieux (la flemme,
+l'égoïsme, l'hypocrisie envers soi-même), sans filtre ni excuse. La Parole, elle, n'est pas juste "une phrase
+polie" au hasard : c'est le mensonge social exact que tout le monde a déjà dit dans cette situation précise.
+Vise ce niveau-là : si un lecteur ne peut pas s'imaginer la scène en 1 seconde, ou si La Pensée sonne encore
+sage et mesurée, recommence.
 
 MATIÈRE PREMIÈRE : tu reçois une liste de sujets qui buzzent aujourd'hui en France (recherches Google Trends).
 
