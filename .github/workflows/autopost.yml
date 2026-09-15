@@ -16,7 +16,10 @@ jobs:
     steps:
       - name: Récupérer le dépôt
         uses: actions/checkout@v4
-
+        
+      - name: Installer ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+        
       - name: Installer Python
         uses: actions/setup-python@v5
         with:
