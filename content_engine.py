@@ -287,6 +287,10 @@ Rejette (approved=false) si l'UN de ces problèmes est présent :
 - thought_text est encore mou ou édulcoré (contient "un peu", "plutôt", "je trouve que", "peut-être", ou toute
   autre nuance polie) au lieu d'être une pensée brute et sans filtre. Une Pensée qui pourrait presque être dite
   à voix haute sans choquer personne n'a pas assez de contraste avec La Parole : à rejeter.
+- Le sujet choisi reste trop "gentillet" (une simple contrariété du quotidien comme une réunion qui traîne ou
+  un groupe WhatsApp bruyant) alors qu'un sujet plus cru était possible (jalousie, argent, apparence, mensonge
+  affectif, comparaison sociale, petite lâcheté qu'on cache par honte). Ce compte vise des vérités qu'on cache
+  par gêne, pas juste des désagréments qu'on partage déjà volontiers entre amis.
 - topic_tag, thought_text ou spoken_text sont manquants, vides, ou beaucoup trop longs pour tenir sur un visuel
   (thought_text/spoken_text : plus de 18 mots).
 
