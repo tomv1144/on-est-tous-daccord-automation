@@ -266,13 +266,18 @@ def publish_facebook_video(page_id, page_token, video_url, description):
 # Publication Instagram (carrousel + reel)
 # ---------------------------------------------------------------------------
 
-def _ig_wait_until_finished(creation_id, ig_token, label):
+def _ig_wait_until_finished(creation_id, ig_token, label, max_attempts=20, sleep_seconds=3):
+    """Interroge Instagram jusqu'à ce que le conteneur (image ou vidéo) soit
+    marqué FINISHED. Le traitement d'une vidéo est nettement plus lourd que
+    celui d'une image et peut occasionnellement prendre plusieurs minutes
+    (transcodage pour le flux Reels) : c'est pour ça que les appelants
+    passent un délai plus long pour un reel que pour un simple visuel."""
     status_url = (
         f"https://graph.instagram.com/{FB_API_VERSION}/{creation_id}"
         f"?fields=status_code&access_token={urllib.parse.quote(ig_token)}"
     )
-    for attempt in range(20):
-        time.sleep(3)
+    for attempt in range(max_attempts):
+        time.sleep(sleep_seconds)
         req = urllib.request.Request(status_url, method="GET")
         try:
             with urllib.request.urlopen(req, timeout=30) as resp_raw:
@@ -280,13 +285,12 @@ def _ig_wait_until_finished(creation_id, ig_token, label):
         except urllib.error.HTTPError as e:
             raise RuntimeError(f"Erreur vérification statut ({label}) : {e.read().decode('utf-8', errors='ignore')}")
         code = status_data.get("status_code")
-        log(f"Statut {label} ({attempt + 1}/20) : {code}")
+        log(f"Statut {label} ({attempt + 1}/{max_attempts}) : {code}")
         if code == "FINISHED":
             return
         if code in ("ERROR", "EXPIRED"):
             raise RuntimeError(f"Le traitement de {label} a échoué : {status_data}")
     raise RuntimeError(f"{label} n'était toujours pas prêt après l'attente maximale.")
-
 
 def publish_instagram_carousel(ig_user_id, ig_token, image_urls, caption):
     child_ids = []
