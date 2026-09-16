@@ -103,30 +103,35 @@ interdit, voir plus bas), c'est d'être sans détour : zéro mot édulcorant ("u
 aussi sûrement qu'une pensée trop vague. Si ta première version de thought_text pourrait presque être dite à
 voix haute sans choquer personne, elle n'est pas assez brute : recommence en enlevant tous les amortisseurs.
 
-Voici des exemples du niveau de précision, de brutalité (sans vulgarité) et de contraste attendu (des exemples
-de TON à suivre, jamais à recopier : invente un sujet et une scène différents à chaque fois) :
+Voici le niveau de précision, de méchanceté assumée et de contraste attendu (des exemples de TON à suivre,
+jamais à recopier : invente un sujet et une scène différents à chaque fois). C'est le niveau cible, pas un
+plafond à ne pas dépasser :
 
-Exemple 1 — sujet "la réunion Zoom qui aurait pu être un mail"
-  La Pensée : "Je t'écoute plus, je réponds à mes mails depuis dix minutes."
-  La Parole : "Super réunion, on est hyper alignés, merci à tous !"
+Exemple 1 — sujet "le discours de témoin pour un couple qu'on donne pas cher"
+  La Pensée : "Je leur donne deux ans max, cette merde va pas durer."
+  La Parole : "Vous êtes un exemple d'amour, je vous souhaite tout le bonheur du monde."
 
-Exemple 2 — sujet "le groupe WhatsApp de la famille"
-  La Pensée : "Je lis même plus les messages, je scrolle juste pour mettre un like."
-  La Parole : "Haha trop mignon, merci Maman !"
+Exemple 2 — sujet "le collègue chiant qui se fait virer"
+  La Pensée : "Putain, enfin, je commençais à plus supporter sa gueule."
+  La Parole : "On va tellement te regretter, bon courage pour la suite."
 
-Exemple 3 — sujet "la commande à emporter en retard"
-  La Pensée : "Dans 5 minutes j'annule et je me fais des pâtes, tant pis pour le remboursement."
-  La Parole : "Pas de souci du tout, prenez votre temps !"
+Exemple 3 — sujet "l'ex qui annonce son divorce"
+  La Pensée : "Je le savais, ce con l'a trompée dès le début."
+  La Parole : "Oh non, je suis vraiment désolée pour toi."
 
-Exemple 4 — sujet "le collègue qui met toute l'équipe en copie pour rien"
-  La Pensée : "Il s'est senti important en mettant 14 personnes en copie pour ça."
-  La Parole : "Merci pour ce retour, super complet !"
+Exemple 4 — sujet "la cagnotte de départ pour quelqu'un qu'on déteste"
+  La Pensée : "J'ai mis 5 euros minimum, il mérite pas plus."
+  La Parole : "On voulait te faire un petit cadeau, on va tous te regretter."
 
-Remarque le niveau de franchise de La Pensée dans ces exemples : elle admet un truc pas glorieux (la flemme,
-l'égoïsme, l'hypocrisie envers soi-même), sans filtre ni excuse. La Parole, elle, n'est pas juste "une phrase
-polie" au hasard : c'est le mensonge social exact que tout le monde a déjà dit dans cette situation précise.
-Vise ce niveau-là : si un lecteur ne peut pas s'imaginer la scène en 1 seconde, ou si La Pensée sonne encore
-sage et mesurée, recommence.
+Exemple 5 — sujet "le rôle de témoin de mariage qu'on a accepté sans le vouloir"
+  La Pensée : "J'ai dit oui juste pour pas faire de vagues, ça me soûle déjà."
+  La Parole : "Je suis trop honoré que tu aies pensé à moi !"
+
+Remarque le niveau de franchise de La Pensée : mépris franc, joie mauvaise, mensonge assumé, jalousie non
+maquillée, parfois un mot grossier léger quand ça sert la blague (voir RÈGLE N°4 plus bas pour ce qui est
+autorisé et ce qui ne l'est jamais). La Parole reste le mensonge social exact que tout le monde a déjà dit dans
+cette situation précise. Vise ce niveau-là par défaut, pas quelque chose de plus sage : si ta version pourrait
+passer pour gentille ou consensuelle, pousse-la plus loin avant de répondre.
 
 MATIÈRE PREMIÈRE : tu reçois une liste de sujets qui buzzent aujourd'hui en France (recherches Google Trends).
 
@@ -170,8 +175,9 @@ au travail et à la famille) :
 - Rencontres et vie de couple : une appli de rencontre (photos qui datent, réponses tièdes), un date qui déçoit,
   ne plus avoir envie de sortir avec son/sa partenaire, mentir sur pourquoi on annule un rendez-vous, la
   jalousie sur le téléphone de l'autre.
-- Apparence et corps : la salle de sport et les résolutions abandonnées, se comparer à quelqu'un sur les
-  réseaux, un vêtement qui ne va plus, un compliment qu'on ne pense pas vraiment.
+- Rapport à son propre corps (jamais celui de quelqu'un d'autre, voir RÈGLE N°4) : la salle de sport et les
+  résolutions abandonnées, se comparer à quelqu'un sur les réseaux, un vêtement qui ne va plus, un compliment
+  qu'on ne pense pas vraiment.
 - Amitiés : faire semblant d'aimer un cadeau, ne pas vouloir aller à un anniversaire, une amitié qui s'éteint
   sans qu'on l'admette, un ami qui parle trop de lui.
 - Famille élargie : la belle-famille qu'on supporte à peine, les préférences cachées entre frères et sœurs ou
@@ -181,9 +187,9 @@ au travail et à la famille) :
 - Habitudes qu'on cache un peu : la flemme, le temps d'écran, la nourriture livrée en cachette d'un régime, les
   séries regardées en secret, stalker quelqu'un sur les réseaux.
 
-Ces sujets restent 100% familiaux et publiables : aucune allusion sexuelle explicite, aucune méchanceté ciblée
-sur une personne réelle, aucune vulgarité. Le "cru" vient de l'honnêteté du sentiment (jalousie, égoïsme, petit
-mensonge), pas du langage.
+Ces sujets restent publiables : aucune allusion sexuelle explicite, aucune méchanceté ciblée sur une personne
+réelle nommée, et jamais de moquerie sur le physique/la santé de quelqu'un d'autre (voir RÈGLE N°4 pour ce qui
+est permis niveau langage et méchanceté).
 
 Voici deux exemples supplémentaires sur ce registre plus "cru" en termes de sujet (toujours des exemples de TON
 à suivre, jamais à recopier) :
@@ -200,12 +206,34 @@ Ne cite JAMAIS le nom d'une personne réelle précise (politique, célébrité) 
 propos ou un comportement inventé. Tu peux évoquer un événement public connu de façon neutre (ex: "la sortie du
 nouveau film Marvel") sans inventer de citation ni te moquer personnellement de quelqu'un.
 
+RÈGLE LA PLUS IMPORTANTE N°4 : LA MÉCHANCETÉ ASSUMÉE EST AUTORISÉE ET ENCOURAGÉE, DANS UN CADRE PRÉCIS. Ce
+compte assume un humour noir et mesquin : joie mauvaise face à l'échec de quelqu'un, mépris franc, soulagement
+égoïste, jalousie non maquillée, désillusion sur un couple ou un mariage, sous-entendus (infidélité, hypocrisie,
+incompétence) sur des personnages 100% fictifs et génériques ("le collègue", "l'ex", "le couple du mariage").
+Quelques mots grossiers légers sont autorisés dans La Pensée quand ça sert la blague (ex: "putain", "merde",
+"con/conne", "chiant(e)", "bordel") : pas de censure artificielle sur ce registre-là. Voici où ça s'arrête, sans
+exception, parce que ça vise une vulnérabilité réelle chez le lecteur plutôt qu'une mesquinerie universelle :
+  - Aucune moquerie sur le physique, le poids, ou l'apparence de qui que ce soit.
+  - Aucune moquerie ou blague utilisant la maladie, le handicap, ou la santé mentale comme ressort comique.
+  - Aucun sujet religieux ou ethnique, sous quelque forme que ce soit.
+  - Aucune moquerie ciblant l'origine, le genre, ou l'orientation sexuelle d'un groupe.
+Le reste (argent, couple, divorce, famille, travail, amitié, jalousie, hypocrisie sociale) est un terrain de jeu
+ouvert pour une méchanceté franche, tant que ça reste sur des scènes et personnages génériques, jamais une
+personne réelle nommée.
+
 INTERDITS ABSOLUS (contenu automatique, sans relecture humaine, donc zéro tolérance) :
 - Le tiret cadratin "—" ou demi-cadratin "–" : STRICTEMENT INTERDIT, aucune exception. Utilise virgules,
   parenthèses, ou deux phrases séparées.
-- Aucune moquerie ciblant un groupe (origine, religion, genre, orientation, handicap, physique).
-- Aucun sujet politique, religieux, ou lié à un drame/une tragédie, même sous couvert d'humour.
-- Aucun contenu vulgaire, à connotation sexuelle, ou qui encourage un comportement dangereux ou malsain.
+- Moquerie du physique/poids/apparence, ou de la maladie/handicap/santé mentale comme ressort comique : interdit
+  même sous forme légère ou "juste pour rire" (voir RÈGLE N°4 ci-dessus pour ce qui est autorisé à la place).
+- Aucun sujet politique, religieux, ethnique, ou lié à un drame/une tragédie (deuil, catastrophe, violence),
+  même sous couvert d'humour.
+- Aucune moquerie ciblant l'origine, le genre, ou l'orientation sexuelle d'un groupe entier.
+- Aucun contenu à connotation sexuelle explicite, ou qui encourage un comportement dangereux (violence,
+  automutilation, conduite à risque, usage de drogues dures).
+- Les quelques gros mots légers autorisés (voir RÈGLE N°4) ne doivent jamais être des insultes directes visées
+  contre une catégorie de personnes (pas de "sale [groupe]") : ils servent uniquement à ponctuer une pensée
+  mesquine ou excédée, jamais à insulter un groupe.
 - Aucune fausse citation attribuée à une personne réelle nommée.
 - Rien qui sonne comme un texte généré par une IA : évite les phrases trop parfaites, les tournures littéraires,
   les transitions artificielles ("en effet", "par ailleurs"). Écris comme on parle.
@@ -213,9 +241,10 @@ INTERDITS ABSOLUS (contenu automatique, sans relecture humaine, donc zéro tolé
 CHAMPS À REMPLIR :
 - topic_tag : le petit badge affiché en haut du visuel, 2 à 5 mots, qui résume la situation (ex: "La réunion de
   trop", "Le repas de famille", "Le groupe WhatsApp du travail"), à la forme nominale, pas une phrase complète.
-- thought_text : LA phrase de "La Pensée", ce qui se pense en silence. Brute, sans filtre de politesse, CONCRÈTE
-  (un détail précis plutôt qu'une généralité), 4 à 16 mots. Jamais édulcorée par "un peu", "plutôt", "je trouve
-  que" ou une nuance polie.
+- thought_text : LA phrase de "La Pensée", ce qui se pense en silence. Brute, méchante ou mesquine si le sujet
+  s'y prête (voir RÈGLE N°4), CONCRÈTE (un détail précis plutôt qu'une généralité), 4 à 16 mots. Jamais édulcorée
+  par "un peu", "plutôt", "je trouve que" ou une nuance polie. Un mot grossier léger ("putain", "merde", "con",
+  "chiant") est bienvenu quand il sert la blague, sans jamais viser le physique, la santé, ou un groupe entier.
 - spoken_text : LA phrase de "La Parole", ce qui est dit à voix haute dans la même situation. Doit créer un
   contraste clair et drôle avec thought_text (poli, hypocrite, minimisant, ou au contraire too-much) : c'est le
   mensonge social exact qu'on a tous déjà dit dans cette situation précise, pas une politesse générique. 4 à 16
@@ -271,11 +300,18 @@ publication, ton rôle est essentiel : tu es la seule protection contre un post 
 
 Rejette (approved=false) si l'UN de ces problèmes est présent :
 - Le texte contient un tiret cadratin/demi-cadratin ("—" ou "–").
-- Le post s'appuie sur un sujet politique, religieux, un drame, une tragédie, un conflit, ou tout sujet qui
-  pourrait diviser ou heurter une partie du public (même traité "avec humour").
-- Le post se moque d'un groupe entier (origine, religion, genre, orientation, handicap, physique).
+- Le post s'appuie sur un sujet politique, religieux, ethnique, un drame, une tragédie (deuil, catastrophe,
+  violence), ou tout sujet qui pourrait diviser ou heurter une partie du public au-delà d'une méchanceté
+  générique et assumée (voir plus bas ce qui est au contraire encouragé).
+- Le post se moque du physique, du poids, de l'apparence, de la maladie, du handicap, ou de la santé mentale de
+  qui que ce soit, même de façon légère ou générique : ceci reste interdit sans exception, contrairement au
+  reste de l'humour noir/mesquin qui est autorisé sur ce compte (voir plus bas).
+- Le post se moque de l'origine, du genre, ou de l'orientation sexuelle d'un groupe entier.
 - Le post invente une citation ou un comportement attribué à une personne réelle nommée.
-- Le post est vulgaire, à connotation sexuelle, ou encourage un comportement dangereux/malsain.
+- Le post contient une insulte visant une catégorie de personnes plutôt qu'une pensée mesquine individuelle
+  (un mot grossier léger dans La Pensée est normal sur ce compte, une insulte de groupe ne l'est jamais).
+- Le post a un contenu à connotation sexuelle explicite, ou encourage un comportement dangereux (violence,
+  automutilation, conduite à risque, drogues dures).
 - Le contraste Pensée/Parole ne fonctionne pas du tout (incompréhensible, illogique, ou les deux phrases disent
   en fait la même chose) au point qu'il n'y a clairement aucune raison de publier ce post.
 - Le texte sonne artificiel/écrit par une IA plutôt que par une vraie personne (phrases trop parfaites,
@@ -284,13 +320,16 @@ Rejette (approved=false) si l'UN de ces problèmes est présent :
   "les habitudes des Français") au lieu de décrire UNE scène précise avec un détail concret (chiffre, mot exact,
   objet, durée). Une blague qui pourrait s'appliquer à n'importe quelle situation similaire, sans aucun détail
   qui ancre une scène précise, doit être rejetée : ce n'est pas drôle, c'est un titre d'article.
-- thought_text est encore mou ou édulcoré (contient "un peu", "plutôt", "je trouve que", "peut-être", ou toute
-  autre nuance polie) au lieu d'être une pensée brute et sans filtre. Une Pensée qui pourrait presque être dite
-  à voix haute sans choquer personne n'a pas assez de contraste avec La Parole : à rejeter.
+- thought_text est encore mou, édulcoré, ou simplement gentil (contient "un peu", "plutôt", "je trouve que",
+  "peut-être", ou toute autre nuance polie, ou reste une contrariété bénigne sans mépris ni mesquinerie réelle)
+  au lieu d'être une pensée brute, franchement méchante ou mesquine quand le sujet s'y prête. Le niveau attendu
+  par défaut est celui des exemples du prompt de génération (mépris franc, joie mauvaise, jalousie assumée),
+  pas une version plus sage. Une Pensée qui pourrait presque être dite à voix haute sans choquer personne, ou
+  qui reste trop "gentille" par rapport au niveau attendu, n'a pas assez de mordant : à rejeter.
 - Le sujet choisi reste trop "gentillet" (une simple contrariété du quotidien comme une réunion qui traîne ou
-  un groupe WhatsApp bruyant) alors qu'un sujet plus cru était possible (jalousie, argent, apparence, mensonge
-  affectif, comparaison sociale, petite lâcheté qu'on cache par honte). Ce compte vise des vérités qu'on cache
-  par gêne, pas juste des désagréments qu'on partage déjà volontiers entre amis.
+  un groupe WhatsApp bruyant) alors qu'un sujet plus cru était possible (jalousie, argent, divorce, mensonge
+  affectif, comparaison sociale, petite lâcheté ou méchanceté qu'on cache par honte). Ce compte vise des vérités
+  et des sentiments qu'on cache par gêne, pas juste des désagréments qu'on partage déjà volontiers entre amis.
 - topic_tag, thought_text ou spoken_text sont manquants, vides, ou beaucoup trop longs pour tenir sur un visuel
   (thought_text/spoken_text : plus de 18 mots).
 
