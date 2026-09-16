@@ -341,7 +341,10 @@ def publish_instagram_reel(ig_user_id, ig_token, video_url, caption):
         raise RuntimeError(f"Erreur création conteneur reel Instagram ({status}) : {resp}")
     creation_id = resp["id"]
 
-    _ig_wait_until_finished(creation_id, ig_token, "reel Instagram")
+    # Une vidéo met plus longtemps à être traitée qu'une image : jusqu'à 10
+    # minutes d'attente (60 tentatives de 10 secondes) avant d'abandonner,
+    # contre 1 minute pour les images du carrousel.
+    _ig_wait_until_finished(creation_id, ig_token, "reel Instagram", max_attempts=60, sleep_seconds=10)
 
     status, resp = http_json(
         f"https://graph.instagram.com/{FB_API_VERSION}/{ig_user_id}/media_publish",
