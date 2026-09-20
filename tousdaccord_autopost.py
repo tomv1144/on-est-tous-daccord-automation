@@ -10,8 +10,9 @@ Ce script fait tout, sans intervention humaine, à chaque exécution :
      filtre qualité/sécurité (remplace la relecture humaine) : s'il rejette
      le contenu, le script régénère, puis abandonne ce cycle plutôt que de
      publier un contenu problématique.
-  4. Génère le carrousel (3 images) et le reel (vidéo courte, musique
-     générée par code, sans voix) correspondants.
+  4. Génère le carrousel (3 images) et le reel (vidéo courte, rendu tenté par
+     l'API OpenAI avec repli local, musique générée par code, sans voix)
+     correspondants.
   5. Commit + push ces fichiers dans CE MÊME dépôt GitHub (nécessaire pour
      que les API Facebook/Instagram puissent aller les chercher via
      raw.githubusercontent.com).
@@ -44,7 +45,7 @@ from content_engine import (  # noqa: E402
     sanitize_dashes, get_trending_topics, generate_content, review_content, apply_corrections,
 )
 from generate_carousel import generate_carousel  # noqa: E402
-from generate_reel import generate_reel  # noqa: E402
+from generate_reel_final import generate_reel_final  # noqa: E402
 
 HISTORY_PATH = os.path.join(HERE, "tousdaccord_history.json")
 LOG_PATH = os.path.join(HERE, "tousdaccord_autopost.log")
@@ -418,8 +419,8 @@ def main():
         out_dir=out_dir, closing_line=content["closing_line"],
     )
 
-    log("Génération du reel (vidéo + musique générée)...")
-    reel_path = generate_reel(
+    log("Génération du reel (rendu OpenAI, avec repli automatique sur le moteur local)...")
+    reel_path = generate_reel_final(
         content["topic_tag"], content["thought_text"], content["spoken_text"],
         out_dir=out_dir, seed=abs(hash(content["sujet"])) % 1000, closing_line=content["closing_line"],
     )
