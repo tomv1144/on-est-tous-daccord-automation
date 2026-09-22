@@ -1,0 +1,45 @@
+name: TEST - Preuve de concept couples d'animaux
+
+# Ce workflow ne se lance JAMAIS tout seul (pas de "schedule" ici) : c'est un
+# test à lancer UNE SEULE FOIS À LA MAIN, pour voir un exemple du nouveau
+# concept "couples d'animaux mignons" avant de valider l'approche et de
+# construire le pipeline automatique complet. Il n'a aucun effet sur les
+# publications Facebook/Instagram normales (celles-ci restent gérées par
+# .github/workflows/autopost.yml).
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write   # nécessaire pour que le workflow puisse commit le résultat du test
+
+jobs:
+  poc-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer les dépendances
+        run: pip install Pillow numpy scipy
+
+      - name: Lancer le test (génère les images + la vidéo d'exemple)
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: python poc_animaux_test.py
+
+      - name: Enregistrer le résultat dans le dépôt (pour pouvoir le regarder)
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add poc_test_output/
+          git diff --cached --quiet || git commit -m "Test : exemple couple de Corgis (preuve de concept)"
+          git push
