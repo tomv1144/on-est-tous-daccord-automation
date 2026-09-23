@@ -41,3 +41,4 @@ jobs:
           git add casting_output/
           git diff --cached --quiet || git commit -m "Casting : styles Corgi + Golden (meme partiel)"
           git push
+
