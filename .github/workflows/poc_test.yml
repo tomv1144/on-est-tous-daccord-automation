@@ -36,10 +36,17 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python poc_animaux_test.py
 
+      # "if: always()" : cette étape s'exécute MÊME SI l'étape précédente a
+      # échoué (panne réseau, crédit OpenAI épuisé en cours de route...), pour
+      # ne jamais perdre les images déjà générées avant la panne. Le workflow
+      # affichera quand même une croix rouge si le test a échoué (normal,
+      # ça reste un échec), mais au moins le travail déjà fait sera visible
+      # dans poc_test_output/ au lieu d'être perdu.
       - name: Enregistrer le résultat dans le dépôt (pour pouvoir le regarder)
+        if: always()
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
           git add poc_test_output/
-          git diff --cached --quiet || git commit -m "Test : exemple couple de Corgis (preuve de concept)"
+          git diff --cached --quiet || git commit -m "Test : exemple couple de Corgis (preuve de concept, meme partiel)"
           git push
