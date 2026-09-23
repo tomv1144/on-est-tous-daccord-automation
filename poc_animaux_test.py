@@ -7,36 +7,56 @@ valider l'approche technique retenue pour le nouveau concept "couples
 d'animaux mignons" (Corgis + Golden Retrievers), comme demandé explicitement :
 "Je veux voir un exemple avant de valider".
 
-CE QUE CE TEST VÉRIFIE (les deux points bloquants du nouveau concept) :
+CE QUE CE TEST VÉRIFIE (les points bloquants du nouveau concept) :
 1. Peut-on garder les MÊMES personnages (mêmes chiens, reconnaissables) d'une
    image à l'autre ? -> on génère UNE image de référence du couple de Corgis,
    puis on la redonne à OpenAI à chaque nouvelle image en lui demandant de
    garder exactement les mêmes personnages, juste dans une autre pose.
 2. Peut-on obtenir un vrai MOUVEMENT (pas juste un zoom sur une image figée) ?
-   -> on génère plusieurs poses différentes d'une même petite scène (les deux
-   Corgis qui se câlinent), puis on les enchaîne en fondu ("stop-motion"),
-   la même technique déjà utilisée pour Klarimo et pour les anciennes vidéos
-   La Pensée / La Parole.
+   -> on génère de nombreuses poses différentes, organisées en 4 petites
+   scènes qui racontent une mini-histoire (câlin du matin, jeu, balade au
+   parc, coucher de soleil), puis on les enchaîne en fondu ("stop-motion").
+3. (ajouté suite au retour de Tom : "les vidéos doivent durer au moins 1
+   minute") Peut-on tenir une durée d'au moins 1 minute sans que ça devienne
+   répétitif ou que le cout/temps de génération explose ? -> on est passé de
+   7 images (test précédent, ~6 secondes) à 41 images (1 référence + 40 poses
+   réparties sur 4 scènes), ce qui donne environ 65 secondes. Voir la
+   remarque sur le temps de génération plus bas.
+
+COMMENT ON GARDE LES PERSONNAGES ET LE DÉCOR COHÉRENTS D'UNE POSE À L'AUTRE :
+chaque nouvelle pose est générée en donnant DEUX images de référence à
+OpenAI (endpoint /images/edits, qui accepte plusieurs images de référence
+à la fois) : (1) l'image de référence originale des 2 Corgis, pour ne
+jamais dériver sur les personnages, et (2) la pose précédente DE LA MÊME
+SCÈNE, pour garder le même décor/cadrage d'une pose à l'autre au sein d'une
+scène. Quand on change de scène (nouveau décor), on repart uniquement de
+l'image de référence originale.
 
 POURQUOI PAS SORA (l'outil vidéo d'OpenAI) : vérifié le 22/09/2026, l'API Sora
-d'OpenAI ferme définitivement le 24/09/2026 (dans 2 jours). Ce n'est donc pas
-une option utilisable maintenant. La solution testée ici (images fixes
-enchaînées) est la seule voie actuellement disponible pour avoir à la fois des
-personnages fixes ET du mouvement.
+d'OpenAI ferme définitivement le 24/09/2026. Ce n'est donc pas une option
+utilisable maintenant. La solution testée ici (images fixes enchaînées) est
+la seule voie actuellement disponible pour avoir à la fois des personnages
+fixes ET du mouvement.
 
-IMPORTANT SUR LE COÛT : ce test génère 7 images au total (1 image de référence
-+ 6 poses) en qualité "high". Tom a indiqué que le coût n'est pas un problème
-pour ce travail précis, donc la qualité est volontairement poussée pour bien
-juger du résultat.
+IMPORTANT SUR LE COÛT ET LE TEMPS : ce test génère 41 images en qualité
+"high" (2 images de référence par appel pour la plupart des poses, ce qui
+est un peu plus lourd qu'une image de référence seule). Tom a indiqué que le
+coût n'est pas un problème pour ce travail précis. En revanche, le TEMPS de
+génération est réel : avec 41 appels à l'API, ce test prend environ 15 à 25
+minutes à s'exécuter (contre 2 minutes pour la version précédente à 7
+images). C'est une donnée importante à garder en tête pour le pipeline
+automatique final : générer une vidéo de ce genre chaque jour prendra un
+temps comparable, ce qui reste largement compatible avec une publication une
+fois par jour, mais n'est plus une opération de quelques secondes.
 
 Utilisation (voir le workflow GitHub .github/workflows/poc_test.yml, à lancer
 à la main depuis l'onglet "Actions" de GitHub) :
     python poc_animaux_test.py
 Résultat, dans le dossier poc_test_output/ :
-    - reference_corgi_couple.png       (l'image de référence des 2 Corgis)
-    - frame_01.png à frame_06.png      (les 6 poses générées à partir de la référence)
-    - poc_corgis_test_silent.mp4       (les poses enchaînées en fondu, sans musique)
-    - poc_corgis_test.mp4              (la même vidéo, avec musique de fond ajoutée)
+    - reference_corgi_couple.png            (l'image de référence des 2 Corgis)
+    - frame_scene1_01.png, frame_scene1_02.png, ... (poses de chaque scène)
+    - poc_corgis_test_silent.mp4            (les poses enchaînées en fondu, sans musique)
+    - poc_corgis_test.mp4                   (la même vidéo, avec musique de fond ajoutée)
 """
 
 import json
@@ -64,70 +84,99 @@ SIZE = "1024x1536"       # format portrait, cohérent avec un Reel vertical
 QUALITY = "high"          # coût pas un problème pour ce test, on privilégie le rendu
 
 FPS = 30
-HOLD_SECONDS = 0.55        # temps où chaque pose reste "figée" à l'écran
-TRANSITION_SECONDS = 0.35  # durée du fondu-enchaîné entre deux poses
+HOLD_SECONDS = 1.0         # temps où chaque pose reste "figée" à l'écran
+TRANSITION_SECONDS = 0.6   # durée du fondu-enchaîné entre deux poses
 VIDEO_SIZE = (1080, 1920)  # format Reel final
 
 STYLE_SUFFIX = (
     "Style: adorable 3D Pixar/Disney-like animated illustration, soft rounded "
     "shapes, big expressive round eyes, warm soft studio lighting, smooth "
     "clean render like a still from a 3D animated movie. Vertical portrait "
-    "composition. Simple soft-colored plain background (no scenery clutter). "
-    "Absolutely no text, no letters, no numbers, no logo, no watermark "
-    "anywhere in the image."
+    "composition. Absolutely no text, no letters, no numbers, no logo, no "
+    "watermark anywhere in the image."
 )
 
 REFERENCE_PROMPT = (
     "A cute couple of Corgi dogs, full body, sitting close together side by "
-    "side on a simple soft cushion. One is the 'boy' Corgi (slightly bigger, "
-    "wearing a simple navy blue collar) and the other is the 'girl' Corgi "
-    "(slightly smaller, with a small pink flower accessory behind one ear), "
-    "so they stay easy to tell apart in every future image. Both facing "
-    "forward, friendly happy expression, tails visible. "
-    + STYLE_SUFFIX
+    "side on a simple soft cushion, plain soft-colored background. One is "
+    "the 'boy' Corgi (slightly bigger, wearing a simple navy blue collar) "
+    "and the other is the 'girl' Corgi (slightly smaller, with a small pink "
+    "flower accessory behind one ear), so they stay easy to tell apart in "
+    "every future image. Both facing forward, friendly happy expression, "
+    "tails visible. " + STYLE_SUFFIX
 )
 
-# Une petite séquence de poses qui raconte un instant tout simple (un câlin sur
-# un canapé), pensée pour donner un mouvement progressif et fluide une fois
-# enchaînée en fondu, plutôt que 6 poses sans rapport entre elles.
-POSE_PROMPTS = [
-    (
-        "Keep the exact same two Corgi characters as in the reference image "
-        "(same colors, same collar, same flower accessory, same faces, 100% "
-        "visually identical dogs), redraw them in this new pose: both Corgis "
-        "sitting side by side on a cozy couch, looking forward, relaxed. "
-        + STYLE_SUFFIX
-    ),
-    (
-        "Keep the exact same two Corgi characters as in the reference image, "
-        "100% visually identical, redraw them in this new pose: the boy Corgi "
-        "turns his head to look at the girl Corgi, both smiling softly. "
-        + STYLE_SUFFIX
-    ),
-    (
-        "Keep the exact same two Corgi characters as in the reference image, "
-        "100% visually identical, redraw them in this new pose: the boy Corgi "
-        "leans in and gently nuzzles the girl Corgi's cheek, eyes half closed, "
-        "cozy and affectionate. " + STYLE_SUFFIX
-    ),
-    (
-        "Keep the exact same two Corgi characters as in the reference image, "
-        "100% visually identical, redraw them in this new pose: the girl "
-        "Corgi rests her head on the boy Corgi's shoulder, both eyes gently "
-        "closed, very cozy. " + STYLE_SUFFIX
-    ),
-    (
-        "Keep the exact same two Corgi characters as in the reference image, "
-        "100% visually identical, redraw them in this new pose: both Corgis "
-        "cuddled up together in a tight little hug, tails wagging happily, "
-        "big joyful smiles. " + STYLE_SUFFIX
-    ),
-    (
-        "Keep the exact same two Corgi characters as in the reference image, "
-        "100% visually identical, redraw them in this new pose: both Corgis "
-        "settled and sleepy, cuddled together, eyes fully closed, peaceful "
-        "contented expression. " + STYLE_SUFFIX
-    ),
+# La mini-histoire du jour, en 4 scènes. Chaque scène a son décor (setting)
+# et une liste de poses (actions) : la 1ère pose de chaque scène est une
+# "pose d'établissement" du nouveau décor (ne référence que l'image de
+# référence des personnages), les poses suivantes de la même scène
+# référencent EN PLUS la pose précédente, pour garder le même décor/cadrage
+# tout au long de la scène (voir _build_pose_prompt plus bas).
+SCENES = [
+    {
+        "name": "scene1_calin_matin",
+        "setting": "in a cozy living room, sitting together on a soft couch, warm morning light",
+        "poses": [
+            "sitting side by side on the couch, looking at each other and smiling",
+            "the boy Corgi leans his head onto the girl Corgi's shoulder",
+            "the girl Corgi playfully boops the boy Corgi's nose with her paw",
+            "both Corgis laughing together, happy open-mouth pant expression",
+            "the boy Corgi nuzzles into the girl Corgi's neck affectionately",
+            "the girl Corgi rests her paw gently on the boy Corgi's paw",
+            "both Corgis lean their foreheads together, eyes closed",
+            "the boy Corgi wags his tail happily while looking at the girl Corgi",
+            "both Corgis cuddled close in a tight hug, content smiles",
+            "both Corgis settled quietly, eyes half-closed, peaceful and cozy",
+        ],
+    },
+    {
+        "name": "scene2_jeu",
+        "setting": "standing together on a soft rug in the same cozy living room",
+        "poses": [
+            "both Corgis standing facing each other, tails up, playful stance",
+            "the girl Corgi play-bows with her front paws down, inviting to play",
+            "the boy Corgi hops forward playfully towards the girl Corgi",
+            "both Corgis chasing each other in a small circle, big joyful smiles",
+            "the boy Corgi playfully paws at the girl Corgi's tail",
+            "both Corgis mid-jump, front paws off the ground, happy and energetic",
+            "the girl Corgi playfully nips at the boy Corgi's ear",
+            "both Corgis rolling together gently on the rug, laughing",
+            "both Corgis pausing, panting happily, tongues out, looking at each other",
+            "both Corgis sitting down together after playing, tails wagging, content",
+        ],
+    },
+    {
+        "name": "scene3_balade",
+        "setting": "walking together outside on a sunny park path lined with flowers",
+        "poses": [
+            "both Corgis walking side by side on the sunny park path",
+            "the girl Corgi sniffing a flower while the boy Corgi watches fondly",
+            "both Corgis walking closely, shoulders touching",
+            "the boy Corgi playfully carries a small stick in his mouth",
+            "both Corgis running together happily through the grass",
+            "the girl Corgi looks back over her shoulder at the boy Corgi, smiling",
+            "both Corgis sitting together under a small tree, looking at the view",
+            "the boy Corgi rests his head on the girl Corgi's back",
+            "both Corgis playing together in a small pile of leaves",
+            "both Corgis walking back together, close together, happy",
+        ],
+    },
+    {
+        "name": "scene4_coucher_soleil",
+        "setting": "sitting together on a cozy window seat indoors, warm sunset light streaming in",
+        "poses": [
+            "both Corgis sitting together on the window seat, watching the sunset",
+            "both Corgis watching the sunset together, peaceful expression",
+            "the girl Corgi leans her head onto the boy Corgi's shoulder",
+            "the boy Corgi settles closer to the girl Corgi, both relaxed",
+            "both Corgis cuddled up close, eyes half-closed, content",
+            "the girl Corgi nuzzles into the boy Corgi's chest",
+            "both Corgis' eyes slowly closing, very sleepy and cozy",
+            "both Corgis curled up together, almost asleep",
+            "both Corgis fully asleep, cuddled together peacefully",
+            "final peaceful shot, both Corgis fast asleep together, soft smiles, very cozy",
+        ],
+    },
 ]
 
 
@@ -202,13 +251,14 @@ def generate_reference_image(prompt, output_path, api_key, timeout=120):
     return _save_image_from_response(data, output_path, timeout)
 
 
-def generate_posed_frame(reference_paths, pose_prompt, output_path, api_key, timeout=120):
+def generate_posed_frame(reference_paths, pose_prompt, output_path, api_key, timeout=150):
     """Étape 2 : génère UNE nouvelle pose des MÊMES personnages, en repartant
-    de la ou des image(s) de référence (endpoint /images/edits). NOTE
-    technique importante : le paramètre "input_fidelity" (utile sur d'anciens
-    modèles) ne doit PAS être envoyé pour gpt-image-2, sous peine d'erreur --
-    ce modèle traite toujours les images fournies en haute fidélité par
-    défaut, il n'y a donc rien à faire de plus ici."""
+    d'une ou plusieurs image(s) de référence (endpoint /images/edits, qui
+    accepte jusqu'à 16 images de référence à la fois). NOTE technique
+    importante : le paramètre "input_fidelity" (utile sur d'anciens modèles)
+    ne doit PAS être envoyé pour gpt-image-2, sous peine d'erreur -- ce
+    modèle traite toujours les images fournies en haute fidélité par défaut,
+    il n'y a donc rien à faire de plus ici."""
     fields = {
         "model": OPENAI_IMAGE_MODEL,
         "prompt": pose_prompt,
@@ -230,6 +280,43 @@ def generate_posed_frame(reference_paths, pose_prompt, output_path, api_key, tim
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         data = json.loads(resp.read().decode("utf-8"))
     return _save_image_from_response(data, output_path, timeout)
+
+
+def _generate_with_retry(fn, *args, attempts=2, wait_s=6, **kwargs):
+    """Ce test dure maintenant 15-25 minutes (41 images) : on ne veut pas
+    perdre tout le travail déjà fait à cause d'un simple raté ponctuel de
+    l'API (ça arrive). On retente donc une fois avant d'abandonner pour de
+    bon."""
+    last_error = None
+    for attempt in range(1, attempts + 1):
+        try:
+            return fn(*args, **kwargs)
+        except urllib.error.HTTPError as e:
+            last_error = f"{e.code} : {e.read().decode('utf-8', errors='ignore')}"
+        except Exception as exc:  # noqa: BLE001
+            last_error = str(exc)
+        if attempt < attempts:
+            print(f"    (tentative {attempt} échouée : {last_error} -- nouvel essai dans {wait_s}s)")
+            time.sleep(wait_s)
+    raise RuntimeError(last_error)
+
+
+def _build_pose_prompt(setting_desc, action_desc, is_establishing):
+    if is_establishing:
+        lead = (
+            "Keep the exact same two Corgi characters as in the reference image "
+            "(same colors, same navy collar, same pink flower accessory, same "
+            "faces, 100% visually identical dogs). New scene, "
+        )
+    else:
+        lead = (
+            "Two reference images are provided: the original character "
+            "reference (for the dogs' exact appearance) and the previous pose "
+            "of this same scene (for the exact same setting/background and "
+            "camera framing). Keep the two Corgi characters 100% visually "
+            "identical, and keep the same setting, "
+        )
+    return f"{lead}{setting_desc}. Now: {action_desc}. " + STYLE_SUFFIX
 
 
 def _build_crossfade_video(frame_paths, out_path, fps=FPS, hold_s=HOLD_SECONDS,
@@ -268,7 +355,7 @@ def _build_crossfade_video(frame_paths, out_path, fps=FPS, hold_s=HOLD_SECONDS,
     return out_path
 
 
-def _probe_duration(video_path, default=6.0):
+def _probe_duration(video_path, default=60.0):
     try:
         result = subprocess.run(
             ["ffprobe", "-v", "error", "-show_entries", "format=duration",
@@ -288,30 +375,42 @@ def main():
 
     os.makedirs(OUT_DIR, exist_ok=True)
 
+    total_poses = sum(len(scene["poses"]) for scene in SCENES)
+    predicted_duration = HOLD_SECONDS * (total_poses + 1) + TRANSITION_SECONDS * total_poses
+    print(f"Ce test va générer 1 image de référence + {total_poses} poses "
+          f"({len(SCENES)} scènes), pour une durée finale prévue d'environ "
+          f"{predicted_duration:.0f} secondes.")
+    print()
+
     print("Étape 1/3 : génération de l'image de référence du couple de Corgis...")
     reference_path = os.path.join(OUT_DIR, "reference_corgi_couple.png")
     t0 = time.time()
     try:
-        generate_reference_image(REFERENCE_PROMPT, reference_path, api_key)
-    except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", errors="ignore")
-        print(f"ERREUR génération image de référence ({e.code}) : {body}")
+        _generate_with_retry(generate_reference_image, REFERENCE_PROMPT, reference_path, api_key)
+    except Exception as exc:  # noqa: BLE001
+        print(f"ERREUR génération image de référence : {exc}")
         sys.exit(1)
     print(f"  -> {reference_path} ({time.time() - t0:.1f}s)")
 
-    print(f"Étape 2/3 : génération de {len(POSE_PROMPTS)} poses à partir de la référence...")
+    print(f"Étape 2/3 : génération des {total_poses} poses ({len(SCENES)} scènes)...")
     frame_paths = [reference_path]  # la 1ère frame de la vidéo est la référence elle-même
-    for i, pose_prompt in enumerate(POSE_PROMPTS, start=1):
-        frame_path = os.path.join(OUT_DIR, f"frame_{i:02d}.png")
-        t0 = time.time()
-        try:
-            generate_posed_frame([reference_path], pose_prompt, frame_path, api_key)
-        except urllib.error.HTTPError as e:
-            body = e.read().decode("utf-8", errors="ignore")
-            print(f"ERREUR génération pose {i} ({e.code}) : {body}")
-            sys.exit(1)
-        print(f"  -> {frame_path} ({time.time() - t0:.1f}s)")
-        frame_paths.append(frame_path)
+    for scene in SCENES:
+        print(f"  Scène : {scene['name']}")
+        scene_prev_path = None
+        for i, action in enumerate(scene["poses"], start=1):
+            is_establishing = (i == 1)
+            prompt = _build_pose_prompt(scene["setting"], action, is_establishing)
+            refs = [reference_path] if is_establishing else [reference_path, scene_prev_path]
+            frame_path = os.path.join(OUT_DIR, f"frame_{scene['name']}_{i:02d}.png")
+            t0 = time.time()
+            try:
+                _generate_with_retry(generate_posed_frame, refs, prompt, frame_path, api_key)
+            except Exception as exc:  # noqa: BLE001
+                print(f"    ERREUR génération pose {i} de {scene['name']} : {exc}")
+                sys.exit(1)
+            print(f"    -> {os.path.basename(frame_path)} ({time.time() - t0:.1f}s)")
+            frame_paths.append(frame_path)
+            scene_prev_path = frame_path
 
     print("Étape 3/3 : montage des poses en vidéo (fondu-enchaîné) + musique...")
     silent_path = os.path.join(OUT_DIR, "poc_corgis_test_silent.mp4")
@@ -332,9 +431,9 @@ def main():
     )
 
     print()
-    print("TEST TERMINÉ. Résultat dans poc_test_output/ :")
+    print(f"TEST TERMINÉ ({duration:.0f} secondes). Résultat dans poc_test_output/ :")
     print(f"  - {os.path.basename(reference_path)} (personnages de référence)")
-    print(f"  - frame_01.png à frame_{len(POSE_PROMPTS):02d}.png (poses générées)")
+    print(f"  - frame_<scene>_<numéro>.png ({total_poses} poses générées)")
     print(f"  - {os.path.basename(silent_path)} (poses enchaînées, sans musique)")
     print(f"  - {os.path.basename(final_path)} (vidéo finale du test, avec musique)")
 
