@@ -213,5 +213,17 @@
     "facebook_reel_video_id": "1134271979172535",
     "instagram_carousel_media_id": "18102870110370648",
     "instagram_reel_media_id": "17936192745125480"
+  },
+  {
+    "date": "2026-09-25T20:08:29",
+    "sujet": "Un ami te demande de lui prêter sa voiture pour le week-end et te la rend avec le réservoir vide",
+    "angle_type": "intemporel",
+    "based_on_trend": "",
+    "raisonnement_choix_angle": "Aucune tendance n'a été remontée aujourd'hui, donc j'ai écarté d'office l'angle buzz_actu faute de matière, et je suis parti sur un angle intemporel côté \"argent entre proches\" (prêt de voiture rendue vide) qui n'a pas encore été traité dans la liste récente et qui offre un détail concret (le réservoir vide) plutôt qu'un thème vague.",
+    "topic_tag": "La voiture prêtée rendue vide",
+    "facebook_carousel_post_id": "1247179211821578_122108497791481224",
+    "facebook_reel_video_id": "1568594214528358",
+    "instagram_carousel_media_id": "18185104141415733",
+    "instagram_reel_media_id": "18029618633886923"
   }
 ]
