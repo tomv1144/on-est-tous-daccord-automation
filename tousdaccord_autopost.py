@@ -1,5 +1,5 @@
 """
-ON EST TOUS D'ACCORD - Agent de publication automatique (Facebook + Instagram)
+NOS PETITES PAPATTES - Agent de publication automatique (Facebook + Instagram)
 ================================================================================
 Nouveau format (remplace entièrement l'ancien "Pensée vs Parole" et son
 carrousel) : un reel muet et attendrissant mettant en scène un couple de
@@ -285,7 +285,7 @@ def publish_instagram_reel(ig_user_id, ig_token, video_url, caption):
 
 def main():
     log("=" * 70)
-    log("ON EST TOUS D'ACCORD AUTOPOST - démarrage")
+    log("NOS PETITES PAPATTES AUTOPOST - démarrage")
     cfg = load_config()
     history = load_history()
     recent_themes = [h["theme_tag"] for h in history[-15:] if h.get("theme_tag")]
