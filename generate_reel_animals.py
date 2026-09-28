@@ -1,5 +1,5 @@
 """
-ON EST TOUS D'ACCORD - Fabrication du reel (couple de Corgis + Golden Retriever)
+NOS PETITES PAPATTES - Fabrication du reel (couple de Corgis + Golden Retriever)
 ====================================================================================
 C'est ici que se construit la vidéo du jour, en 2 étapes, comme validé par le
 test de preuve de concept (poc_animaux_test.py) que Tom a approuvé :
@@ -178,8 +178,8 @@ def invent_scene_plan(theme_tag, mood_description, include_golden, api_key, time
     )
 
     instructions = f"""
-Tu es le réalisateur d'un reel muet et attendrissant pour "On Est Tous
-D'Accord", mettant en scène un couple de chiens Corgis en 3D kawaii chibi
+Tu es le réalisateur d'un reel muet et attendrissant pour "Nos Petites
+Papattes", mettant en scène un couple de chiens Corgis en 3D kawaii chibi
 ({CHARACTER_IDENTITY['corgi']}). {golden_instructions}
 
 Thème du jour : {theme_tag}
