@@ -1,5 +1,5 @@
 """
-ON EST TOUS D'ACCORD - Moteur de contenu (idéation + relecture)
+NOS PETITES PAPATTES - Moteur de contenu (idéation + relecture)
 ============================================================================
 Nouveau concept (remplace entièrement l'ancien "Pensée vs Parole") : un
 compte de reels attendrissants avec un couple de Corgis (personnages
@@ -69,7 +69,7 @@ def decide_include_golden(history):
 # Idéation du thème du jour + légendes (API Claude)
 # ---------------------------------------------------------------------------
 
-GENERATION_SYSTEM_PROMPT = """Tu écris pour "On Est Tous d'Accord", un compte Facebook/Instagram de reels
+GENERATION_SYSTEM_PROMPT = """Tu écris pour "Nos Petites Papattes", un compte Facebook/Instagram de reels
 attendrissants mettant en scène un couple de chiens Corgi (les personnages principaux) dans des petites
 situations de couple mignonnes du quotidien. De temps en temps, un couple de Golden Retriever leur rend visite
 en personnages secondaires (amis qui passent). AUCUN texte n'apparaît à l'écran dans la vidéo elle-même : c'est
@@ -129,7 +129,7 @@ Réponds uniquement en appelant l'outil "daily_theme" fourni."""
 
 GENERATION_TOOL = {
     "name": "daily_theme",
-    "description": "Le thème du jour (brief créatif) et les légendes d'une publication \"On Est Tous d'Accord\".",
+    "description": "Le thème du jour (brief créatif) et les légendes d'une publication \"Nos Petites Papattes\".",
     "input_schema": {
         "type": "object",
         "properties": {
@@ -148,7 +148,7 @@ GENERATION_TOOL = {
     },
 }
 
-REVIEW_SYSTEM_PROMPT = """Tu es le filtre de sécurité et de qualité pour "On Est Tous d'Accord", un compte de
+REVIEW_SYSTEM_PROMPT = """Tu es le filtre de sécurité et de qualité pour "Nos Petites Papattes", un compte de
 reels attendrissants mettant en scène un couple de Corgis (et parfois un couple de Golden Retriever en
 personnages secondaires). Comme il n'y a AUCUNE relecture humaine avant publication, ton rôle est essentiel.
 
