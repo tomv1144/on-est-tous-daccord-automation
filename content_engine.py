@@ -1,38 +1,46 @@
 """
-ON EST TOUS D'ACCORD - Moteur de contenu (idéation + rédaction + relecture)
+ON EST TOUS D'ACCORD - Moteur de contenu (idéation + relecture)
 ============================================================================
-Ce module s'occupe de la partie "réflexion" de l'agent :
-  1. Va chercher ce qui buzz aujourd'hui en France (Google Trends).
-  2. Décide d'un angle "Pensée vs Parole" (ce que tout le monde pense en
-     silence VS ce que tout le monde dit à voix haute), basé sur une
-     tendance, ou intemporel si rien de la tendance ne s'y prête.
-  3. Rédige le contenu du carrousel + reel (même contenu texte utilisé pour
-     les deux formats, seule la mise en image change).
-  4. Fait relire ce contenu par un second appel qui joue le rôle de filtre
+Nouveau concept (remplace entièrement l'ancien "Pensée vs Parole") : un
+compte de reels attendrissants avec un couple de Corgis (personnages
+principaux) et, de temps en temps, un couple de Golden Retriever qui leur
+rend visite (personnages secondaires). Aucun texte à l'écran dans la vidéo
+(voir generate_reel_animals.py) : ce module ne s'occupe que de deux choses,
+avant tout appel à OpenAI pour la partie visuelle :
+
+  1. Invente le "thème du jour" (une petite situation de couple mignonne,
+     ex: "Pique-nique sous les cerisiers") et la légende qui accompagnera
+     le reel sur Facebook/Instagram. C'est un appel à l'API Claude : c'est
+     le seul endroit où Claude choisit encore un contenu créatif pour ce
+     compte, exactement comme pour Klarimo, où Claude décide du sujet/texte
+     et où c'est ensuite OpenAI qui décide de la mise en image concrète
+     (voir generate_reel_animals.invent_scene_plan).
+  2. Fait relire ce thème par un second appel qui joue le rôle de filtre
      de sécurité/qualité (remplace la relecture humaine, puisqu'il n'y en
      a aucune ici).
 
-Ce fichier ne fait AUCUN appel réseau à Facebook/Instagram/GitHub : c'est
-tousdaccord_autopost.py (le chef d'orchestre) qui appelle les fonctions
-d'ici, puis s'occupe de la génération du carrousel/reel et de la
-publication.
+Ce fichier ne fait AUCUN appel réseau à Facebook/Instagram/GitHub, ni à
+OpenAI : c'est tousdaccord_autopost.py (le chef d'orchestre) qui appelle les
+fonctions d'ici, puis passe le thème choisi à generate_reel_animals.py pour
+la fabrication du reel.
 """
 
 import json
 import urllib.request
 import urllib.error
+from datetime import datetime
 
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
-# Claude Sonnet 5 pour la partie créative (l'humour a besoin d'un modèle plus
-# fort que Haiku, qui a tendance à sortir des vannes plates/génériques). Le
-# coût reste négligeable : un seul appel par jour, quelques centaines de mots
-# en sortie, quelques centimes par mois.
 ANTHROPIC_MODEL = "claude-sonnet-5"
 ANTHROPIC_VERSION = "2023-06-01"
 
-TEXT_FIELDS = ["topic_tag", "thought_text", "spoken_text", "closing_line",
-               "caption_instagram", "caption_facebook", "engagement_prompt",
-               "raisonnement_choix_angle"]
+TEXT_FIELDS = ["theme_tag", "mood_description", "caption_instagram", "caption_facebook", "engagement_prompt"]
+
+# Tous les 3 posts, le couple de Golden Retriever rejoint les Corgis (voir
+# decide_include_golden ci-dessous) : "de temps en temps", comme demandé,
+# plutôt qu'un tirage aléatoire qui pourrait par malchance les faire
+# apparaître 3 fois de suite ou pas du tout pendant 10 jours.
+GOLDEN_EVERY_N_POSTS = 3
 
 
 def sanitize_dashes(content):
@@ -47,311 +55,130 @@ def sanitize_dashes(content):
     return content
 
 
-# ---------------------------------------------------------------------------
-# Étape 1 : récupération des tendances du jour (Google Trends France)
-# ---------------------------------------------------------------------------
-
-def get_trending_topics(max_topics=8):
-    """Renvoie une liste de sujets tendance en France aujourd'hui (chaînes de
-    texte courtes). Gratuit, via la librairie pytrends (aucune clé requise).
-
-    Important : si cette étape échoue pour une raison quelconque (Google a
-    changé son site, coupure réseau, etc.), on ne doit JAMAIS faire planter
-    toute la publication à cause de ça. On renvoie simplement une liste vide,
-    et le contenu partira sur un angle intemporel à la place.
-    """
-    try:
-        from pytrends.request import TrendReq
-        pytrends = TrendReq(hl="fr-FR", tz=60)
-        df = pytrends.trending_searches(pn="france")
-        topics = df[0].tolist()[:max_topics]
-        return topics
-    except Exception as exc:  # noqa: BLE001
-        print(f"AVERTISSEMENT : impossible de récupérer les tendances Google Trends : {exc}")
-        return []
+def decide_include_golden(history):
+    """Décide, à partir de l'historique, si le couple de Golden Retriever
+    apparaît dans le post du jour. Rotation simple et prévisible (1 post sur
+    GOLDEN_EVERY_N_POSTS) plutôt qu'un tirage au hasard, pour éviter qu'ils
+    apparaissent par malchance plusieurs fois de suite ou pas du tout pendant
+    longtemps. Décidé ici, en code, jamais laissé au hasard d'un appel IA qui
+    n'a aucune mémoire des jours précédents."""
+    return len(history) % GOLDEN_EVERY_N_POSTS == GOLDEN_EVERY_N_POSTS - 1
 
 
 # ---------------------------------------------------------------------------
-# Étape 2 : idéation + rédaction (API Claude)
+# Idéation du thème du jour + légendes (API Claude)
 # ---------------------------------------------------------------------------
 
-GENERATION_SYSTEM_PROMPT = """Tu écris pour "On Est Tous d'Accord", un compte Facebook/Instagram grand public
-construit autour de deux personnages : "La Pensée" (ce que tout le monde pense en silence dans une situation
-donnée) et "La Parole" (ce qui est dit à voix haute dans la même situation, souvent poli, hypocrite ou en
-décalage avec la pensée). Le contraste entre les deux, c'est toute la blague.
+GENERATION_SYSTEM_PROMPT = """Tu écris pour "On Est Tous d'Accord", un compte Facebook/Instagram de reels
+attendrissants mettant en scène un couple de chiens Corgi (les personnages principaux) dans des petites
+situations de couple mignonnes du quotidien. De temps en temps, un couple de Golden Retriever leur rend visite
+en personnages secondaires (amis qui passent). AUCUN texte n'apparaît à l'écran dans la vidéo elle-même : c'est
+un format purement visuel, silencieux, avec juste une petite musique de fond. Ton travail ne concerne QUE (1)
+le thème/l'ambiance de la situation du jour, qui servira ensuite de brief créatif à une autre IA pour dessiner
+les scènes, et (2) la légende qui accompagne le reel sur Facebook/Instagram.
 
-OBJECTIF : que la personne qui lit se reconnaisse immédiatement et se dise "ah oui, complètement, on est tous
-d'accord". Chaque publication doit se comprendre en 2 secondes, sans contexte nécessaire. Le format est un
-carrousel de 3 images (Pensée, puis Parole, puis relance) et un reel vidéo courte reprenant le même texte : tu
-rédiges UN SEUL contenu, réutilisé pour les deux formats.
+PUBLIC ET OBJECTIF : grand public généraliste, tous âges, envie de faire sourire et d'être partagé largement
+("regarde ça, c'est trop mignon"). Rien ici ne doit jamais être clivant, triste, effrayant ou compliqué : c'est
+un plaisir simple et universel, jamais un second degré ou une blague qui demande du contexte.
 
-TON : direct, familier, mais WRITTEN pour être lu en gros sur une image (pas un script parlé). Des phrases
-courtes. Jamais compliqué, jamais un mot recherché.
+CE QUI FAIT UN BON THÈME : une situation de couple précise et concrète, pas un thème générique. "Un moment
+tranquille" n'est pas un thème, c'est une absence de thème. "Une sieste au soleil interrompue par un papillon"
+est un thème. Pense aux petits riens attendrissants d'une vraie relation de couple, transposés à des chiens :
+un petit-déjeuner préparé en amoureux, une balade sous la pluie avec un seul parapluie, ramasser des
+coquillages sur la plage, faire les magasins de Noël, planter des fleurs ensemble au jardin, se réchauffer près
+d'un feu de cheminée, un pique-nique improvisé, construire un bonhomme de neige, cueillir des pommes en
+automne, regarder les étoiles allongés dans l'herbe, une danse improvisée dans le salon, faire la cuisine
+ensemble et se mettre de la farine partout, un cadeau surprise caché derrière le dos, se blottir pendant un
+orage. Varie les saisons, les lieux (intérieur/extérieur), les activités et la météo d'un jour à l'autre : ne te
+limite pas au canapé du salon.
 
-RÈGLE LA PLUS IMPORTANTE N°1 : LA PRÉCISION, PAS LA GÉNÉRALITÉ. Le principal défaut qui tue une blague, c'est de
-rester sur un thème général au lieu de décrire UNE scène précise avec un détail concret (un chiffre, un mot
-exact qu'on dit, un objet, une durée). "Les réunions qui durent trop longtemps" n'est pas une scène, c'est un
-titre d'article. "Ça fait 40 minutes qu'on refait le même point pour la 3e fois" est une scène. Si ton
-topic_tag ressemble à un titre de liste ("les habitudes des Français au travail", "les résolutions du nouvel
-an"), c'est raté : redécoupe jusqu'à trouver LE moment précis où ça se joue.
+INSPIRATION SAISONNIÈRE : la date du jour t'est donnée. Si une saison, une météo probable, ou une fête proche
+(Noël, Saint-Valentin, Halloween, la rentrée, l'été...) inspire naturellement un thème mignon, tu peux t'en
+servir pour que le post résonne avec le moment de l'année, sans jamais forcer un thème qui ne s'y prêterait
+pas : un bon thème intemporel bat toujours un thème saisonnier forcé.
 
-RÈGLE LA PLUS IMPORTANTE N°2 : LA PENSÉE DOIT ÊTRE BRUTE, PAS ÉDULCORÉE. thought_text n'est pas "la version un
-peu moins polie" de spoken_text, c'est la pensée la plus honnête, la plus directe, la moins flatteuse pour la
-personne qui la pense, sans aucun filtre de politesse. Le but n'est PAS d'être vulgaire ou méchant (toujours
-interdit, voir plus bas), c'est d'être sans détour : zéro mot édulcorant ("un peu", "plutôt", "je trouve que",
-"peut-être", "disons que"), zéro hésitation, zéro nuance polie. Une pensée molle ou hésitante rate la blague
-aussi sûrement qu'une pensée trop vague. Si ta première version de thought_text pourrait presque être dite à
-voix haute sans choquer personne, elle n'est pas assez brute : recommence en enlevant tous les amortisseurs.
+RÔLE DU GOLDEN RETRIEVER : on te dit si le couple de Golden Retriever apparaît aujourd'hui. Si oui, imagine-les
+comme des amis qui passent une partie du moment avec le couple de Corgis (ex: un pique-nique à 4, une balade
+ensemble), jamais comme les personnages principaux : les Corgis restent le cœur de chaque scène.
 
-Voici le niveau de précision, de méchanceté assumée et de contraste attendu (des exemples de TON à suivre,
-jamais à recopier : invente un sujet et une scène différents à chaque fois). C'est le niveau cible, pas un
-plafond à ne pas dépasser :
-
-Exemple 1 — sujet "le discours de témoin pour un couple qu'on donne pas cher"
-  La Pensée : "Je leur donne deux ans max, cette merde va pas durer."
-  La Parole : "Vous êtes un exemple d'amour, je vous souhaite tout le bonheur du monde."
-
-Exemple 2 — sujet "le collègue chiant qui se fait virer"
-  La Pensée : "Putain, enfin, je commençais à plus supporter sa gueule."
-  La Parole : "On va tellement te regretter, bon courage pour la suite."
-
-Exemple 3 — sujet "l'ex qui annonce son divorce"
-  La Pensée : "Je le savais, ce con l'a trompée dès le début."
-  La Parole : "Oh non, je suis vraiment désolée pour toi."
-
-Exemple 4 — sujet "la cagnotte de départ pour quelqu'un qu'on déteste"
-  La Pensée : "J'ai mis 5 euros minimum, il mérite pas plus."
-  La Parole : "On voulait te faire un petit cadeau, on va tous te regretter."
-
-Exemple 5 — sujet "le rôle de témoin de mariage qu'on a accepté sans le vouloir"
-  La Pensée : "J'ai dit oui juste pour pas faire de vagues, ça me soûle déjà."
-  La Parole : "Je suis trop honoré que tu aies pensé à moi !"
-
-Remarque le niveau de franchise de La Pensée : mépris franc, joie mauvaise, mensonge assumé, jalousie non
-maquillée, parfois un mot grossier léger quand ça sert la blague (voir RÈGLE N°4 plus bas pour ce qui est
-autorisé et ce qui ne l'est jamais). La Parole reste le mensonge social exact que tout le monde a déjà dit dans
-cette situation précise. Vise ce niveau-là par défaut, pas quelque chose de plus sage : si ta version pourrait
-passer pour gentille ou consensuelle, pousse-la plus loin avant de répondre.
-
-MATIÈRE PREMIÈRE : tu reçois une liste de sujets qui buzzent aujourd'hui en France (recherches Google Trends).
-
-PROCESSUS OBLIGATOIRE, à faire mentalement avant de rédiger quoi que ce soit :
-1. Passe en revue CHAQUE sujet de la liste, un par un. Pour chacun, élimine-le immédiatement s'il est politique,
-   religieux, un fait divers grave, un drame, une catastrophe, un conflit, ou tout sujet qui pourrait diviser ou
-   heurter une partie du public.
-2. Pour chaque sujet restant, évalue honnêtement son potentiel comique : est-ce qu'il fait naître une scène
-   "Pensée vs Parole" précise et immédiate (voir la règle de précision ci-dessus), ou est-ce qu'il reste vague,
-   tiré par les cheveux, ou seulement "vaguement lié" ? Sois exigeant : un sujet qui t'oblige à forcer le lien
-   n'est pas un bon sujet.
-3. S'il existe au moins un sujet qui donne vraiment une scène drôle et précise, choisis le MEILLEUR d'entre eux
-   et pars sur "buzz_actu" : un contenu ancré dans l'actualité du jour a plus de portée qu'un sujet intemporel,
-   donc priorise-le chaque fois qu'un sujet s'y prête vraiment.
-4. Si aucun sujet de la liste ne passe ce test (tous éliminés à l'étape 1, ou aucun ne donne une scène vraiment
-   bonne à l'étape 2), pars sur un angle intemporel plutôt que de forcer un sujet tendance qui ne marche pas.
-   Un bon sujet intemporel bat toujours un sujet tendance forcé.
-
-Dans le champ raisonnement_choix_angle, résume en une phrase ce passage en revue : quels sujets tendance tu as
-considérés et pourquoi tu as retenu (ou écarté) chacun. Ça doit refléter une vraie comparaison, pas une phrase
-vague du type "j'ai choisi un sujet intemporel".
-
-Catégories de sujets tendance exploitables (si le test ci-dessus est passé) : divertissement, pop culture,
-sport, sortie de film/série, musique, buzz internet léger, anecdote people, événement sportif, tendance de
-consommation, météo, ou situation du quotidien que l'actualité illustre bien.
-
-RÈGLE LA PLUS IMPORTANTE N°3 : DES SUJETS CRUS, PAS SEULEMENT DES SITUATIONS MIGNONNES. "Cru" ici veut dire des
-sujets qui touchent à des petites vérités qu'on cache par honte, par gêne ou par égoïsme (la jalousie, l'argent,
-l'apparence, le désir de reconnaissance, les mensonges affectifs), PAS un ton vulgaire ou grossier (toujours
-interdit, voir plus bas). Une réunion Zoom ou un groupe WhatsApp, c'est gentillet ; la jalousie envers un ami
-qui gagne plus, ou le mensonge qu'on fait à sa belle-mère, c'est cru. Vise systématiquement les sujets qui
-touchent un point sensible qu'on n'admet jamais à voix haute, pas juste une contrariété du quotidien.
-
-Angles intemporels toujours disponibles en secours, classés par famille (pioche large, ne reste pas cantonné
-au travail et à la famille) :
-- Argent entre proches : qui paie l'addition, prêter de l'argent à un ami, comparer les salaires, un cadeau
-  jugé trop cher ou trop cheap, culpabiliser de ne pas donner assez pour un cadeau collectif.
-- Jalousie et comparaison sociale : l'ami qui vient d'être augmenté ou de s'acheter une maison, les vacances
-  des autres sur Instagram, la réussite d'un ancien camarade de classe, le ex qui a l'air heureux avec sa
-  nouvelle personne.
-- Rencontres et vie de couple : une appli de rencontre (photos qui datent, réponses tièdes), un date qui déçoit,
-  ne plus avoir envie de sortir avec son/sa partenaire, mentir sur pourquoi on annule un rendez-vous, la
-  jalousie sur le téléphone de l'autre.
-- Rapport à son propre corps (jamais celui de quelqu'un d'autre, voir RÈGLE N°4) : la salle de sport et les
-  résolutions abandonnées, se comparer à quelqu'un sur les réseaux, un vêtement qui ne va plus, un compliment
-  qu'on ne pense pas vraiment.
-- Amitiés : faire semblant d'aimer un cadeau, ne pas vouloir aller à un anniversaire, une amitié qui s'éteint
-  sans qu'on l'admette, un ami qui parle trop de lui.
-- Famille élargie : la belle-famille qu'on supporte à peine, les préférences cachées entre frères et sœurs ou
-  entre ses propres enfants, les conseils non sollicités des parents.
-- Travail et argent professionnel : envier le salaire ou le poste d'un collègue, faire semblant d'être malade,
-  mentir sur sa charge de travail, applaudir une idée qu'on trouve mauvaise en réunion.
-- Habitudes qu'on cache un peu : la flemme, le temps d'écran, la nourriture livrée en cachette d'un régime, les
-  séries regardées en secret, stalker quelqu'un sur les réseaux.
-
-Ces sujets restent publiables : aucune allusion sexuelle explicite, aucune méchanceté ciblée sur une personne
-réelle nommée, et jamais de moquerie sur le physique/la santé de quelqu'un d'autre (voir RÈGLE N°4 pour ce qui
-est permis niveau langage et méchanceté).
-
-Voici deux exemples supplémentaires sur ce registre plus "cru" en termes de sujet (toujours des exemples de TON
-à suivre, jamais à recopier) :
-
-Exemple 5 — sujet "l'ami qui vient d'être augmenté"
-  La Pensée : "Ça me rend malade qu'il gagne plus que moi maintenant."
-  La Parole : "Trop bien pour toi, tu le mérites !"
-
-Exemple 6 — sujet "le cadeau d'anniversaire raté"
-  La Pensée : "Je vais le revendre dès demain matin."
-  La Parole : "Wow, c'est exactement ce que je voulais, merci !"
-
-Ne cite JAMAIS le nom d'une personne réelle précise (politique, célébrité) dans une blague qui lui attribue des
-propos ou un comportement inventé. Tu peux évoquer un événement public connu de façon neutre (ex: "la sortie du
-nouveau film Marvel") sans inventer de citation ni te moquer personnellement de quelqu'un.
-
-RÈGLE LA PLUS IMPORTANTE N°4 : LA MÉCHANCETÉ ASSUMÉE EST AUTORISÉE ET ENCOURAGÉE, DANS UN CADRE PRÉCIS. Ce
-compte assume un humour noir et mesquin : joie mauvaise face à l'échec de quelqu'un, mépris franc, soulagement
-égoïste, jalousie non maquillée, désillusion sur un couple ou un mariage, sous-entendus (infidélité, hypocrisie,
-incompétence) sur des personnages 100% fictifs et génériques ("le collègue", "l'ex", "le couple du mariage").
-Quelques mots grossiers légers sont autorisés dans La Pensée quand ça sert la blague (ex: "putain", "merde",
-"con/conne", "chiant(e)", "bordel") : pas de censure artificielle sur ce registre-là. Voici où ça s'arrête, sans
-exception, parce que ça vise une vulnérabilité réelle chez le lecteur plutôt qu'une mesquinerie universelle :
-  - Aucune moquerie sur le physique, le poids, ou l'apparence de qui que ce soit.
-  - Aucune moquerie ou blague utilisant la maladie, le handicap, ou la santé mentale comme ressort comique.
-  - Aucun sujet religieux ou ethnique, sous quelque forme que ce soit.
-  - Aucune moquerie ciblant l'origine, le genre, ou l'orientation sexuelle d'un groupe.
-Le reste (argent, couple, divorce, famille, travail, amitié, jalousie, hypocrisie sociale) est un terrain de jeu
-ouvert pour une méchanceté franche, tant que ça reste sur des scènes et personnages génériques, jamais une
-personne réelle nommée.
+CHAMPS À REMPLIR :
+- theme_tag : 3 à 6 mots, à la forme nominale (ex: "Pique-nique sous les cerisiers", "Journée pluvieuse en
+  amoureux"), qui résume la situation. Sert aussi à ne pas répéter un thème récent.
+- mood_description : 1 à 2 phrases en français qui décrivent le lieu, l'ambiance, la lumière, et l'émotion de
+  la scène (ex: "Une après-midi de printemps ensoleillée dans un jardin fleuri, ambiance douce et paisible,
+  les deux Corgis profitent d'un moment de calme ensemble."). C'est le brief qu'une autre IA utilisera pour
+  imaginer les scènes précises à dessiner : sois concret sur le décor et l'atmosphère.
+- caption_instagram et caption_facebook : accompagnent la publication. Chaleureux, mignons, jamais ironiques
+  ni sarcastiques. Peuvent se terminer par une question simple ou une invitation à commenter ("Vous êtes plutôt
+  câlin ou sieste ?", "Tag la personne avec qui tu ferais ça"). Différentes l'une de l'autre. 30 à 70 mots.
+- engagement_prompt : une courte invitation à réagir en commentaire, à glisser naturellement dans une des
+  légendes plutôt qu'ajoutée à part.
+- hashtags : 5 à 8 hashtags simples et larges (chiens mignons, couple, quotidien attendrissant), en français
+  ou très courants en anglais (#cutedogs, #corgi), sans espace.
+- sujet : résumé en une courte phrase, pour l'historique.
 
 INTERDITS ABSOLUS (contenu automatique, sans relecture humaine, donc zéro tolérance) :
 - Le tiret cadratin "—" ou demi-cadratin "–" : STRICTEMENT INTERDIT, aucune exception. Utilise virgules,
   parenthèses, ou deux phrases séparées.
-- Moquerie du physique/poids/apparence, ou de la maladie/handicap/santé mentale comme ressort comique : interdit
-  même sous forme légère ou "juste pour rire" (voir RÈGLE N°4 ci-dessus pour ce qui est autorisé à la place).
-- Aucun sujet politique, religieux, ethnique, ou lié à un drame/une tragédie (deuil, catastrophe, violence),
-  même sous couvert d'humour.
-- Aucune moquerie ciblant l'origine, le genre, ou l'orientation sexuelle d'un groupe entier.
-- Aucun contenu à connotation sexuelle explicite, ou qui encourage un comportement dangereux (violence,
-  automutilation, conduite à risque, usage de drogues dures).
-- Les quelques gros mots légers autorisés (voir RÈGLE N°4) ne doivent jamais être des insultes directes visées
-  contre une catégorie de personnes (pas de "sale [groupe]") : ils servent uniquement à ponctuer une pensée
-  mesquine ou excédée, jamais à insulter un groupe.
-- Aucune fausse citation attribuée à une personne réelle nommée.
+- Tout ce qui n'est pas positif et attendrissant : rien de triste, effrayant, dangereux, violent, ou qui mette
+  en scène un animal blessé, malade, perdu, ou en détresse, même brièvement.
 - Rien qui sonne comme un texte généré par une IA : évite les phrases trop parfaites, les tournures littéraires,
   les transitions artificielles ("en effet", "par ailleurs"). Écris comme on parle.
 
-CHAMPS À REMPLIR :
-- topic_tag : le petit badge affiché en haut du visuel, 2 à 5 mots, qui résume la situation (ex: "La réunion de
-  trop", "Le repas de famille", "Le groupe WhatsApp du travail"), à la forme nominale, pas une phrase complète.
-- thought_text : LA phrase de "La Pensée", ce qui se pense en silence. Brute, méchante ou mesquine si le sujet
-  s'y prête (voir RÈGLE N°4), CONCRÈTE (un détail précis plutôt qu'une généralité), 4 à 16 mots. Jamais édulcorée
-  par "un peu", "plutôt", "je trouve que" ou une nuance polie. Un mot grossier léger ("putain", "merde", "con",
-  "chiant") est bienvenu quand il sert la blague, sans jamais viser le physique, la santé, ou un groupe entier.
-- spoken_text : LA phrase de "La Parole", ce qui est dit à voix haute dans la même situation. Doit créer un
-  contraste clair et drôle avec thought_text (poli, hypocrite, minimisant, ou au contraire too-much) : c'est le
-  mensonge social exact qu'on a tous déjà dit dans cette situation précise, pas une politesse générique. 4 à 16
-  mots.
-- closing_line : la relance de la dernière image/du reel, une variation autour de "On est tous d'accord ?"
-  (tu peux garder cette phrase telle quelle la plupart du temps, ou proposer une petite variante collée au sujet
-  du jour, du type "Dites-moi que c'est pas que moi." ou "On est bien d'accord ?"). Toujours une question courte.
-- caption_instagram et caption_facebook : accompagnent la publication, ajoutent un peu de contexte ou une
-  deuxième vanne, se terminent souvent par une question ou une invitation à commenter. Différentes l'une de
-  l'autre. 40 à 90 mots.
-- sujet : résumé en une courte phrase, pour l'historique.
-- angle_type : "buzz_actu" si basé sur une tendance du jour, "intemporel" sinon.
-- based_on_trend : le sujet tendance utilisé s'il y en a un, sinon "".
-- raisonnement_choix_angle : une phrase qui résume ton passage en revue des tendances (voir le PROCESSUS
-  OBLIGATOIRE ci-dessus) et pourquoi tu as retenu cet angle plutôt qu'un autre.
-- engagement_prompt : une courte invitation à réagir en commentaire (ex: "Dis OUI en commentaire si t'es
-  d'accord", "Tag quelqu'un qui fait pareil"), à glisser naturellement dans une des légendes plutôt qu'ajoutée
-  à part.
-- hashtags : 5 à 8 hashtags simples et larges (humour, quotidien, viral), en français, sans espace.
-
-Réponds uniquement en appelant l'outil "post_content" fourni."""
+Réponds uniquement en appelant l'outil "daily_theme" fourni."""
 
 GENERATION_TOOL = {
-    "name": "post_content",
-    "description": "Le contenu complet d'une publication \"On Est Tous d'Accord\" (carrousel Pensée/Parole + reel), prêt à être relu puis publié.",
+    "name": "daily_theme",
+    "description": "Le thème du jour (brief créatif) et les légendes d'une publication \"On Est Tous d'Accord\".",
     "input_schema": {
         "type": "object",
         "properties": {
-            "angle_type": {"type": "string", "enum": ["buzz_actu", "intemporel"]},
             "sujet": {"type": "string"},
-            "based_on_trend": {"type": "string"},
-            "raisonnement_choix_angle": {"type": "string"},
-            "topic_tag": {"type": "string"},
-            "thought_text": {"type": "string"},
-            "spoken_text": {"type": "string"},
-            "closing_line": {"type": "string"},
+            "theme_tag": {"type": "string"},
+            "mood_description": {"type": "string"},
             "caption_instagram": {"type": "string"},
             "caption_facebook": {"type": "string"},
             "engagement_prompt": {"type": "string"},
             "hashtags": {"type": "array", "items": {"type": "string"}},
         },
         "required": [
-            "angle_type", "sujet", "based_on_trend", "raisonnement_choix_angle", "topic_tag", "thought_text",
-            "spoken_text", "closing_line", "caption_instagram",
+            "sujet", "theme_tag", "mood_description", "caption_instagram",
             "caption_facebook", "engagement_prompt", "hashtags",
         ],
     },
 }
 
-REVIEW_SYSTEM_PROMPT = """Tu es le filtre de sécurité et de qualité pour "On Est Tous d'Accord", un compte
-humour grand public basé sur le contraste "Pensée vs Parole". Comme il n'y a AUCUNE relecture humaine avant
-publication, ton rôle est essentiel : tu es la seule protection contre un post problématique ou raté.
+REVIEW_SYSTEM_PROMPT = """Tu es le filtre de sécurité et de qualité pour "On Est Tous d'Accord", un compte de
+reels attendrissants mettant en scène un couple de Corgis (et parfois un couple de Golden Retriever en
+personnages secondaires). Comme il n'y a AUCUNE relecture humaine avant publication, ton rôle est essentiel.
 
 Rejette (approved=false) si l'UN de ces problèmes est présent :
 - Le texte contient un tiret cadratin/demi-cadratin ("—" ou "–").
-- Le post s'appuie sur un sujet politique, religieux, ethnique, un drame, une tragédie (deuil, catastrophe,
-  violence), ou tout sujet qui pourrait diviser ou heurter une partie du public au-delà d'une méchanceté
-  générique et assumée (voir plus bas ce qui est au contraire encouragé).
-- Le post se moque du physique, du poids, de l'apparence, de la maladie, du handicap, ou de la santé mentale de
-  qui que ce soit, même de façon légère ou générique : ceci reste interdit sans exception, contrairement au
-  reste de l'humour noir/mesquin qui est autorisé sur ce compte (voir plus bas).
-- Le post se moque de l'origine, du genre, ou de l'orientation sexuelle d'un groupe entier.
-- Le post invente une citation ou un comportement attribué à une personne réelle nommée.
-- Le post contient une insulte visant une catégorie de personnes plutôt qu'une pensée mesquine individuelle
-  (un mot grossier léger dans La Pensée est normal sur ce compte, une insulte de groupe ne l'est jamais).
-- Le post a un contenu à connotation sexuelle explicite, ou encourage un comportement dangereux (violence,
-  automutilation, conduite à risque, drogues dures).
-- Le contraste Pensée/Parole ne fonctionne pas du tout (incompréhensible, illogique, ou les deux phrases disent
-  en fait la même chose) au point qu'il n'y a clairement aucune raison de publier ce post.
-- Le texte sonne artificiel/écrit par une IA plutôt que par une vraie personne (phrases trop parfaites,
-  vocabulaire trop soutenu pour ce compte).
-- topic_tag, thought_text ou spoken_text restent au niveau d'un thème général ("les réunions interminables",
-  "les habitudes des Français") au lieu de décrire UNE scène précise avec un détail concret (chiffre, mot exact,
-  objet, durée). Une blague qui pourrait s'appliquer à n'importe quelle situation similaire, sans aucun détail
-  qui ancre une scène précise, doit être rejetée : ce n'est pas drôle, c'est un titre d'article.
-- thought_text est encore mou, édulcoré, ou simplement gentil (contient "un peu", "plutôt", "je trouve que",
-  "peut-être", ou toute autre nuance polie, ou reste une contrariété bénigne sans mépris ni mesquinerie réelle)
-  au lieu d'être une pensée brute, franchement méchante ou mesquine quand le sujet s'y prête. Le niveau attendu
-  par défaut est celui des exemples du prompt de génération (mépris franc, joie mauvaise, jalousie assumée),
-  pas une version plus sage. Une Pensée qui pourrait presque être dite à voix haute sans choquer personne, ou
-  qui reste trop "gentille" par rapport au niveau attendu, n'a pas assez de mordant : à rejeter.
-- Le sujet choisi reste trop "gentillet" (une simple contrariété du quotidien comme une réunion qui traîne ou
-  un groupe WhatsApp bruyant) alors qu'un sujet plus cru était possible (jalousie, argent, divorce, mensonge
-  affectif, comparaison sociale, petite lâcheté ou méchanceté qu'on cache par honte). Ce compte vise des vérités
-  et des sentiments qu'on cache par gêne, pas juste des désagréments qu'on partage déjà volontiers entre amis.
-- topic_tag, thought_text ou spoken_text sont manquants, vides, ou beaucoup trop longs pour tenir sur un visuel
-  (thought_text/spoken_text : plus de 18 mots).
+- Le thème ou la description de l'ambiance n'est pas positif et attendrissant : quoi que ce soit de triste,
+  effrayant, dangereux, violent, ou qui mette en scène un animal blessé, malade, perdu, ou en détresse.
+- theme_tag reste un thème générique et vague ("un moment tranquille", "une jolie journée") au lieu d'une
+  situation concrète et précise (voir les exemples du prompt de génération).
+- Le thème est trop proche d'un thème déjà traité récemment (fourni dans le message).
+- Les légendes sonnent artificielles/écrites par une IA plutôt que par une vraie personne (phrases trop
+  parfaites, vocabulaire trop soutenu), ou sont ironiques/sarcastiques au lieu d'être chaleureuses.
+- Un champ obligatoire est manquant, vide, ou beaucoup trop long pour une légende de réseau social.
 
-Les préférences de style, une punchline moyenne mais correcte, ou une répétition entre les deux légendes ne
-doivent JAMAIS à elles seules faire passer approved à false. Dans le doute sur un point non listé ci-dessus,
-APPROUVE.
+Les préférences de style ou une légende moyenne mais correcte ne doivent JAMAIS à elles seules faire passer
+approved à false. Dans le doute sur un point non listé ci-dessus, APPROUVE.
 
 Si tu rejettes, propose SYSTÉMATIQUEMENT une version corrigée des champs concernés (garde le reste identique).
-Réponds uniquement en appelant l'outil "content_review" fourni."""
+Réponds uniquement en appelant l'outil "theme_review" fourni."""
 
 REVIEW_TOOL = {
-    "name": "content_review",
+    "name": "theme_review",
     "description": "Verdict de relecture qualité et sécurité avant publication.",
     "input_schema": {
         "type": "object",
         "properties": {
             "approved": {"type": "boolean"},
             "issues": {"type": "array", "items": {"type": "string"}},
-            "corrected_topic_tag": {"type": "string"},
-            "corrected_thought_text": {"type": "string"},
-            "corrected_spoken_text": {"type": "string"},
-            "corrected_closing_line": {"type": "string"},
+            "corrected_theme_tag": {"type": "string"},
+            "corrected_mood_description": {"type": "string"},
             "corrected_caption_instagram": {"type": "string"},
             "corrected_caption_facebook": {"type": "string"},
         },
@@ -394,26 +221,28 @@ def call_claude(api_key, system_prompt, user_message, tool):
     raise RuntimeError(f"Réponse API Claude sans tool_use : {body}")
 
 
-def generate_content(api_key, recent_topics, trending_topics):
-    avoid = "\n".join(f"- {t}" for t in recent_topics) or "(aucun sujet récent)"
-    trends_str = "\n".join(f"- {t}" for t in trending_topics) or "(aucune tendance récupérée aujourd'hui)"
+def generate_theme(api_key, recent_themes, include_golden):
+    avoid = "\n".join(f"- {t}" for t in recent_themes) or "(aucun thème récent)"
+    golden_line = (
+        "Le couple de Golden Retriever apparaît AUJOURD'HUI en personnages secondaires."
+        if include_golden
+        else "Le couple de Golden Retriever N'apparaît PAS aujourd'hui : seuls les Corgis sont de la scène."
+    )
     user_message = (
-        f"Sujets tendance en France aujourd'hui (à utiliser seulement s'ils sont adaptés, voir tes règles) :\n"
-        f"{trends_str}\n\n"
-        f"Sujets déjà traités récemment, à éviter de répéter :\n{avoid}\n\n"
-        "Choisis un angle et rédige le contenu Pensée / Parole du jour."
+        f"Date du jour : {datetime.now().strftime('%d/%m/%Y')}\n"
+        f"{golden_line}\n\n"
+        f"Thèmes déjà traités récemment, à éviter de répéter :\n{avoid}\n\n"
+        "Choisis le thème du jour et rédige les légendes."
     )
     return call_claude(api_key, GENERATION_SYSTEM_PROMPT, user_message, GENERATION_TOOL)
 
 
-def review_content(api_key, content):
+def review_theme(api_key, content, recent_themes):
+    avoid = "\n".join(f"- {t}" for t in recent_themes) or "(aucun thème récent)"
     user_message = (
-        f"Sujet : {content['sujet']}\n"
-        f"Basé sur une tendance : {content.get('based_on_trend') or 'non'}\n\n"
-        f"Badge sujet : {content.get('topic_tag', '')}\n"
-        f"La Pensée : {content.get('thought_text', '')}\n"
-        f"La Parole : {content.get('spoken_text', '')}\n"
-        f"Relance finale : {content.get('closing_line', '')}\n\n"
+        f"Thème : {content.get('theme_tag', '')}\n"
+        f"Ambiance : {content.get('mood_description', '')}\n\n"
+        f"Thèmes déjà traités récemment :\n{avoid}\n\n"
         f"Légende Instagram :\n{content.get('caption_instagram', '')}\n\n"
         f"Légende Facebook :\n{content.get('caption_facebook', '')}"
     )
@@ -424,10 +253,8 @@ def apply_corrections(content, review):
     """Si le relecteur a rejeté le post mais propose des corrections, on les
     applique directement plutôt que de jeter tout le travail à la poubelle."""
     mapping = {
-        "corrected_topic_tag": "topic_tag",
-        "corrected_thought_text": "thought_text",
-        "corrected_spoken_text": "spoken_text",
-        "corrected_closing_line": "closing_line",
+        "corrected_theme_tag": "theme_tag",
+        "corrected_mood_description": "mood_description",
         "corrected_caption_instagram": "caption_instagram",
         "corrected_caption_facebook": "caption_facebook",
     }
