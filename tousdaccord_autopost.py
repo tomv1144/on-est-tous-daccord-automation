@@ -1,24 +1,34 @@
 """
 ON EST TOUS D'ACCORD - Agent de publication automatique (Facebook + Instagram)
 ================================================================================
-Ce script fait tout, sans intervention humaine, à chaque exécution :
+Nouveau format (remplace entièrement l'ancien "Pensée vs Parole" et son
+carrousel) : un reel muet et attendrissant mettant en scène un couple de
+Corgis (et, de temps en temps, un couple de Golden Retriever en personnages
+secondaires). Ce script fait tout, sans intervention humaine, à chaque
+exécution :
 
-  1. Récupère les tendances du jour en France (Google Trends, gratuit).
-  2. Rédige le contenu "Pensée vs Parole" du jour (API Claude), en respectant
-     la voix éditoriale et les règles de sécurité du compte.
-  3. Fait relire ce contenu par un second appel API qui joue le rôle de
-     filtre qualité/sécurité (remplace la relecture humaine) : s'il rejette
-     le contenu, le script régénère, puis abandonne ce cycle plutôt que de
-     publier un contenu problématique.
-  4. Génère le carrousel (3 images) et le reel (vidéo courte, rendu tenté par
-     l'API OpenAI avec repli local, musique générée par code, sans voix)
-     correspondants.
-  5. Commit + push ces fichiers dans CE MÊME dépôt GitHub (nécessaire pour
-     que les API Facebook/Instagram puissent aller les chercher via
+  1. Décide si le couple de Golden Retriever apparaît aujourd'hui (rotation
+     simple en code, voir content_engine.decide_include_golden).
+  2. Invente le thème du jour + les légendes (API Claude), voir
+     content_engine.generate_theme.
+  3. Fait relire ce thème par un second appel API qui joue le rôle de filtre
+     qualité/sécurité (remplace la relecture humaine) : s'il rejette le
+     contenu et ne peut pas le corriger, le script ABANDONNE ce cycle plutôt
+     que de publier un contenu problématique.
+  4. Fabrique le reel (scènes + poses générées par OpenAI, montage en
+     fondu-enchaîné, musique de fond générée par code), voir
+     generate_reel_animals.generate_reel_animals. IMPORTANT : il n'y a AUCUN
+     format de secours pour ce concept. Si la fabrication échoue pour
+     n'importe quelle raison (clé API absente, panne, quota, crédit
+     épuisé...), le script ABANDONNE ce cycle : rien n'est publié ce jour-là,
+     plutôt que de publier un format qui ne correspond plus du tout au
+     concept. C'est un choix assumé.
+  5. Commit + push le reel dans CE MÊME dépôt GitHub (nécessaire pour que les
+     API Facebook/Instagram puissent aller le chercher via
      raw.githubusercontent.com).
-  6. Publie le carrousel + le reel sur la Page Facebook et sur le compte
-     Instagram professionnel.
-  7. Enregistre ce qui a été publié pour ne jamais répéter un sujet récent.
+  6. Publie le reel sur la Page Facebook et sur le compte Instagram
+     professionnel.
+  7. Enregistre ce qui a été publié pour ne jamais répéter un thème récent.
 
 Ce script est fait pour tourner comme "GitHub Actions workflow" planifié
 (voir .github/workflows/autopost.yml) : il s'exécute sur les serveurs de
@@ -42,10 +52,9 @@ from datetime import datetime
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from content_engine import (  # noqa: E402
-    sanitize_dashes, get_trending_topics, generate_content, review_content, apply_corrections,
+    sanitize_dashes, decide_include_golden, generate_theme, review_theme, apply_corrections,
 )
-from generate_carousel import generate_carousel  # noqa: E402
-from generate_reel_final import generate_reel_final  # noqa: E402
+from generate_reel_animals import generate_reel_animals  # noqa: E402
 
 HISTORY_PATH = os.path.join(HERE, "tousdaccord_history.json")
 LOG_PATH = os.path.join(HERE, "tousdaccord_autopost.log")
@@ -68,6 +77,7 @@ def log(message):
 def load_config():
     required = [
         "ANTHROPIC_API_KEY",
+        "OPENAI_API_KEY",
         "GITHUB_REPO",
         "FB_PAGE_ID",
         "FB_PAGE_ACCESS_TOKEN",
@@ -193,55 +203,8 @@ def publish_assets_and_get_urls(repo, relative_paths, commit_message):
 
 
 # ---------------------------------------------------------------------------
-# Publication Facebook (carrousel + vidéo)
+# Publication Facebook (vidéo)
 # ---------------------------------------------------------------------------
-
-def _fb_upload_unpublished_photo(page_id, page_token, image_path):
-    """Étape 1 d'un post multi-photos Facebook : on met en ligne chaque image
-    sans la publier tout de suite (published=false), pour récupérer son id
-    et pouvoir ensuite les assembler dans un seul post via /feed."""
-    url = f"https://graph.facebook.com/{FB_API_VERSION}/{page_id}/photos"
-    boundary = "----tousdaccordBoundary"
-    with open(image_path, "rb") as f:
-        image_bytes = f.read()
-    parts = [
-        f"--{boundary}\r\nContent-Disposition: form-data; name=\"published\"\r\n\r\nfalse\r\n",
-        f"--{boundary}\r\nContent-Disposition: form-data; name=\"access_token\"\r\n\r\n{page_token}\r\n",
-        f"--{boundary}\r\nContent-Disposition: form-data; name=\"source\"; filename=\"slide.png\"\r\n"
-        f"Content-Type: image/png\r\n\r\n",
-    ]
-    body = "".join(parts).encode("utf-8") + image_bytes + f"\r\n--{boundary}--\r\n".encode("utf-8")
-    req = urllib.request.Request(
-        url, data=body, method="POST",
-        headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            return json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        raise RuntimeError(f"Erreur upload photo Facebook : {e.read().decode('utf-8', errors='ignore')}")
-
-
-def publish_facebook_carousel(page_id, page_token, image_paths, caption):
-    photo_ids = []
-    for path in image_paths:
-        result = _fb_upload_unpublished_photo(page_id, page_token, path)
-        if "id" not in result:
-            raise RuntimeError(f"Erreur upload photo Facebook (pas d'id) : {result}")
-        photo_ids.append(result["id"])
-
-    url = f"https://graph.facebook.com/{FB_API_VERSION}/{page_id}/feed"
-    payload = {"message": caption, "access_token": page_token}
-    for i, photo_id in enumerate(photo_ids):
-        payload[f"attached_media[{i}]"] = json.dumps({"media_fbid": photo_id})
-    data = urllib.parse.urlencode(payload).encode("utf-8")
-    req = urllib.request.Request(url, data=data, method="POST")
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            return json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        raise RuntimeError(f"Erreur publication carrousel Facebook : {e.read().decode('utf-8', errors='ignore')}")
-
 
 def publish_facebook_video(page_id, page_token, video_url, description):
     """Publie une vidéo sur la Page via une URL déjà hébergée (pas d'upload
@@ -264,15 +227,13 @@ def publish_facebook_video(page_id, page_token, video_url, description):
 
 
 # ---------------------------------------------------------------------------
-# Publication Instagram (carrousel + reel)
+# Publication Instagram (reel)
 # ---------------------------------------------------------------------------
 
 def _ig_wait_until_finished(creation_id, ig_token, label, max_attempts=20, sleep_seconds=3):
-    """Interroge Instagram jusqu'à ce que le conteneur (image ou vidéo) soit
-    marqué FINISHED. Le traitement d'une vidéo est nettement plus lourd que
-    celui d'une image et peut occasionnellement prendre plusieurs minutes
-    (transcodage pour le flux Reels) : c'est pour ça que les appelants
-    passent un délai plus long pour un reel que pour un simple visuel."""
+    """Interroge Instagram jusqu'à ce que le conteneur vidéo soit marqué
+    FINISHED. Le traitement d'une vidéo peut occasionnellement prendre
+    plusieurs minutes (transcodage pour le flux Reels)."""
     status_url = (
         f"https://graph.instagram.com/{FB_API_VERSION}/{creation_id}"
         f"?fields=status_code&access_token={urllib.parse.quote(ig_token)}"
@@ -293,44 +254,6 @@ def _ig_wait_until_finished(creation_id, ig_token, label, max_attempts=20, sleep
             raise RuntimeError(f"Le traitement de {label} a échoué : {status_data}")
     raise RuntimeError(f"{label} n'était toujours pas prêt après l'attente maximale.")
 
-def publish_instagram_carousel(ig_user_id, ig_token, image_urls, caption):
-    child_ids = []
-    for index, image_url in enumerate(image_urls):
-        status, resp = http_json(
-            f"https://graph.instagram.com/{FB_API_VERSION}/{ig_user_id}/media",
-            {"Content-Type": "application/json"},
-            {"image_url": image_url, "is_carousel_item": "true", "access_token": ig_token},
-        )
-        if status != 200 or "id" not in resp:
-            raise RuntimeError(f"Erreur création item carrousel Instagram ({status}) : {resp}")
-        child_id = resp["id"]
-        # On attend que Instagram ait fini de télécharger/traiter CHAQUE image avant
-        # de construire le conteneur carrousel : sinon l'appel média_publish arrive
-        # trop tôt et Instagram répond "Media ID is not available".
-        _ig_wait_until_finished(child_id, ig_token, f"item carrousel {index + 1}")
-        child_ids.append(child_id)
-
-    status, resp = http_json(
-        f"https://graph.instagram.com/{FB_API_VERSION}/{ig_user_id}/media",
-        {"Content-Type": "application/json"},
-        {"media_type": "CAROUSEL", "children": ",".join(child_ids), "caption": caption, "access_token": ig_token},
-    )
-    if status != 200 or "id" not in resp:
-        raise RuntimeError(f"Erreur création conteneur carrousel Instagram ({status}) : {resp}")
-    carousel_id = resp["id"]
-
-    # Même logique pour le conteneur carrousel final lui-même avant de publier.
-    _ig_wait_until_finished(carousel_id, ig_token, "conteneur carrousel")
-
-    status, resp = http_json(
-        f"https://graph.instagram.com/{FB_API_VERSION}/{ig_user_id}/media_publish",
-        {"Content-Type": "application/json"},
-        {"creation_id": carousel_id, "access_token": ig_token},
-    )
-    if status != 200:
-        raise RuntimeError(f"Erreur publication carrousel Instagram ({status}) : {resp}")
-    return resp
-
 
 def publish_instagram_reel(ig_user_id, ig_token, video_url, caption):
     status, resp = http_json(
@@ -343,8 +266,7 @@ def publish_instagram_reel(ig_user_id, ig_token, video_url, caption):
     creation_id = resp["id"]
 
     # Une vidéo met plus longtemps à être traitée qu'une image : jusqu'à 10
-    # minutes d'attente (60 tentatives de 10 secondes) avant d'abandonner,
-    # contre 1 minute pour les images du carrousel.
+    # minutes d'attente (60 tentatives de 10 secondes) avant d'abandonner.
     _ig_wait_until_finished(creation_id, ig_token, "reel Instagram", max_attempts=60, sleep_seconds=10)
 
     status, resp = http_json(
@@ -366,28 +288,24 @@ def main():
     log("ON EST TOUS D'ACCORD AUTOPOST - démarrage")
     cfg = load_config()
     history = load_history()
-    recent_topics = [h["sujet"] for h in history[-15:]]
+    recent_themes = [h["theme_tag"] for h in history[-15:] if h.get("theme_tag")]
+    include_golden = decide_include_golden(history)
+    log(f"Golden Retriever aujourd'hui : {'oui' if include_golden else 'non'}")
 
     ig_token = get_fresh_ig_token(cfg["IG_ACCESS_TOKEN"])
     git_commit_and_push([os.path.basename(IG_TOKEN_STATE_PATH)], "Renouvellement jeton Instagram")
 
-    # --- Étape 1a : tendances du jour ---
-    log("Récupération des tendances Google Trends France...")
-    trending_topics = get_trending_topics()
-    log(f"Tendances récupérées : {trending_topics or '(aucune, on part sur un angle intemporel)'}")
+    # --- Étape 1a : thème du jour (API Claude) ---
+    log("Invention du thème du jour (API Claude)...")
+    content = sanitize_dashes(generate_theme(cfg["ANTHROPIC_API_KEY"], recent_themes, include_golden))
+    log(f"Thème proposé : {content['theme_tag']}")
 
-    # --- Étape 1b : génération ---
-    log("Génération du contenu (API Claude)...")
-    content = sanitize_dashes(generate_content(cfg["ANTHROPIC_API_KEY"], recent_topics, trending_topics))
-    log(f"Sujet proposé : {content['sujet']} (angle: {content['angle_type']})")
-    log(f"Analyse des tendances : {content.get('raisonnement_choix_angle', '(non fourni)')}")
-
-    # --- Étape 1c : relecture qualité ---
+    # --- Étape 1b : relecture qualité ---
     max_attempts = 3
     approved = False
     for attempt in range(max_attempts):
         log(f"Relecture qualité (tentative {attempt + 1}/{max_attempts})...")
-        review = review_content(cfg["ANTHROPIC_API_KEY"], content)
+        review = review_theme(cfg["ANTHROPIC_API_KEY"], content, recent_themes)
         if review.get("approved"):
             log("Contenu approuvé.")
             approved = True
@@ -401,52 +319,49 @@ def main():
             break
 
         if not has_corrections:
-            content = generate_content(cfg["ANTHROPIC_API_KEY"], recent_topics + [content["sujet"]], trending_topics)
+            content = generate_theme(cfg["ANTHROPIC_API_KEY"], recent_themes + [content["theme_tag"]], include_golden)
         content = sanitize_dashes(content)
 
     if not approved:
         log("Contenu toujours rejeté après plusieurs tentatives -> ABANDON de ce cycle, rien n'est publié.")
         return
 
-    # --- Étape 2 : visuels (carrousel + reel) ---
+    # --- Étape 2 : fabrication du reel ---
+    # AUCUN format de secours ici (voir docstring de generate_reel_animals) :
+    # si ça échoue, on abandonne proprement ce cycle plutôt que de laisser
+    # planter le script ou publier autre chose à la place.
     stamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     relative_dir = f"posts/{stamp}"
     out_dir = os.path.join(HERE, relative_dir)
 
-    log("Génération du carrousel (3 images)...")
-    carousel_paths = generate_carousel(
-        content["topic_tag"], content["thought_text"], content["spoken_text"],
-        out_dir=out_dir, closing_line=content["closing_line"],
-    )
+    log("Fabrication du reel (scènes + poses via OpenAI, montage, musique)...")
+    try:
+        reel_path = generate_reel_animals(
+            content["theme_tag"], content["mood_description"], include_golden,
+            out_dir=out_dir, seed=abs(hash(content["theme_tag"])) % 1000, api_key=cfg["OPENAI_API_KEY"],
+        )
+    except Exception as exc:  # noqa: BLE001
+        log(f"ÉCHEC de la fabrication du reel : {exc}")
+        log(
+            "ABANDON de ce cycle : pas de format de secours pour ce concept "
+            "(voir generate_reel_animals.py). Rien n'est publié aujourd'hui."
+        )
+        return
 
-    log("Génération du reel (rendu OpenAI, avec repli automatique sur le moteur local)...")
-    reel_path = generate_reel_final(
-        content["topic_tag"], content["thought_text"], content["spoken_text"],
-        out_dir=out_dir, seed=abs(hash(content["sujet"])) % 1000, closing_line=content["closing_line"],
+    # --- Étape 3 : hébergement ---
+    log("Publication du fichier dans le dépôt GitHub...")
+    relative_path = os.path.relpath(reel_path, HERE)
+    urls = publish_assets_and_get_urls(
+        cfg["GITHUB_REPO"], [relative_path], f"Reel du {stamp} : {content['theme_tag'][:60]}",
     )
-
-    # --- Étape 3 : hébergement (un seul commit pour tous les fichiers du jour) ---
-    log("Publication des fichiers dans le dépôt GitHub...")
-    all_relative_paths = [os.path.relpath(p, HERE) for p in carousel_paths + [reel_path]]
-    urls = publish_assets_and_get_urls(cfg["GITHUB_REPO"], all_relative_paths, f"Contenu du {stamp} : {content['sujet'][:60]}")
-    carousel_urls = [urls[os.path.relpath(p, HERE)] for p in carousel_paths]
-    reel_url = urls[os.path.relpath(reel_path, HERE)]
-    log(f"Fichiers publics : {urls}")
+    reel_url = urls[relative_path]
+    log(f"Fichier public : {reel_url}")
 
     hashtags_str = " ".join(f"#{h.lstrip('#')}" for h in content["hashtags"])
     fb_caption = content["caption_facebook"] + "\n\n" + hashtags_str
     ig_caption = content["caption_instagram"] + "\n\n" + hashtags_str
 
-    # --- Étape 4 : publication du carrousel ---
-    log("Publication du carrousel sur Facebook...")
-    fb_carousel_result = publish_facebook_carousel(cfg["FB_PAGE_ID"], cfg["FB_PAGE_ACCESS_TOKEN"], carousel_paths, fb_caption)
-    log(f"Carrousel Facebook OK : {fb_carousel_result}")
-
-    log("Publication du carrousel sur Instagram...")
-    ig_carousel_result = publish_instagram_carousel(cfg["IG_USER_ID"], ig_token, carousel_urls, ig_caption)
-    log(f"Carrousel Instagram OK : {ig_carousel_result}")
-
-    # --- Étape 5 : publication du reel ---
+    # --- Étape 4 : publication du reel ---
     log("Publication du reel sur Facebook...")
     fb_video_result = publish_facebook_video(cfg["FB_PAGE_ID"], cfg["FB_PAGE_ACCESS_TOKEN"], reel_url, fb_caption)
     log(f"Reel Facebook OK : {fb_video_result}")
@@ -455,21 +370,18 @@ def main():
     ig_reel_result = publish_instagram_reel(cfg["IG_USER_ID"], ig_token, reel_url, ig_caption)
     log(f"Reel Instagram OK : {ig_reel_result}")
 
-    # --- Étape 6 : historique ---
+    # --- Étape 5 : historique ---
     history.append({
         "date": datetime.now().isoformat(timespec="seconds"),
-        "sujet": content["sujet"],
-        "angle_type": content["angle_type"],
-        "based_on_trend": content.get("based_on_trend"),
-        "raisonnement_choix_angle": content.get("raisonnement_choix_angle"),
-        "topic_tag": content["topic_tag"],
-        "facebook_carousel_post_id": fb_carousel_result.get("id"),
+        "sujet": content.get("sujet"),
+        "theme_tag": content["theme_tag"],
+        "mood_description": content["mood_description"],
+        "include_golden": include_golden,
         "facebook_reel_video_id": fb_video_result.get("id"),
-        "instagram_carousel_media_id": ig_carousel_result.get("id"),
         "instagram_reel_media_id": ig_reel_result.get("id"),
     })
     save_history(history)
-    git_commit_and_push([os.path.basename(HISTORY_PATH)], f"Historique : {content['sujet'][:60]}")
+    git_commit_and_push([os.path.basename(HISTORY_PATH)], f"Historique : {content['theme_tag'][:60]}")
     log("Terminé avec succès.")
 
 
