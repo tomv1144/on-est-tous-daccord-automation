@@ -69,7 +69,7 @@ OPENAI_TEXT_MODEL = "gpt-6-astra"
 OPENAI_IMAGE_MODEL = "gpt-image-2"
 
 SIZE = "1024x1536"    # format portrait, cohérent avec un Reel vertical
-QUALITY = "high"       # coût pas un problème pour Tom sur ce travail précis
+QUALITY = "medium"     # moins cher et plus rapide que "high", légère perte de netteté
 
 FPS = 30
 TARGET_DURATION_SECONDS = 65.0  # Tom : "les vidéos doivent durer au moins 1 minute"
