@@ -243,5 +243,14 @@
     "include_golden": true,
     "facebook_reel_video_id": "2592491491213830",
     "instagram_reel_media_id": "18093409976397844"
+  },
+  {
+    "date": "2026-10-01T13:37:59",
+    "sujet": "Les deux Corgis préparent ensemble un chocolat chaud dans leur cuisine un jour d'automne pluvieux",
+    "theme_tag": "Chocolat chaud en amoureux",
+    "mood_description": "Une cuisine chaleureuse baignée d'une lumière douce et orangée, pendant que la pluie d'automne tombe doucement derrière la fenêtre. Les deux Corgis préparent un chocolat chaud ensemble, un peu de mousse sur le museau, dans une ambiance cocooning et tendre.",
+    "include_golden": false,
+    "facebook_reel_video_id": "1463553768957827",
+    "instagram_reel_media_id": "17901231843372181"
   }
 ]
