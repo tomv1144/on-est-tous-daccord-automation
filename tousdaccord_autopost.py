@@ -53,6 +53,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from content_engine import (  # noqa: E402
     sanitize_dashes, decide_include_golden, generate_theme, review_theme, apply_corrections,
+    validate_content,
 )
 from generate_reel_animals import generate_reel_animals  # noqa: E402
 
@@ -300,10 +301,25 @@ def main():
     content = sanitize_dashes(generate_theme(cfg["ANTHROPIC_API_KEY"], recent_themes, include_golden))
     log(f"Thème proposé : {content['theme_tag']}")
 
-    # --- Étape 1b : relecture qualité ---
+    # --- Étape 1b : complétude + relecture qualité ---
     max_attempts = 3
     approved = False
     for attempt in range(max_attempts):
+        # Vérification de complétude FAITE EN CODE, avant toute relecture et
+        # avant la fabrication du reel : Claude peut, malgré le schéma
+        # demandé, oublier un champ obligatoire (déjà vu en production avec
+        # "caption_instagram" manquant, qui a fait planter le script après
+        # ~1h de fabrication du reel). On ne veut plus jamais découvrir ça
+        # aussi tard.
+        missing = validate_content(content)
+        if missing:
+            log(f"Contenu incomplet (champs manquants : {missing}).")
+            if attempt == max_attempts - 1:
+                break
+            log("Nouvelle tentative de génération...")
+            content = sanitize_dashes(generate_theme(cfg["ANTHROPIC_API_KEY"], recent_themes, include_golden))
+            continue
+
         log(f"Relecture qualité (tentative {attempt + 1}/{max_attempts})...")
         review = review_theme(cfg["ANTHROPIC_API_KEY"], content, recent_themes)
         if review.get("approved"):
@@ -319,11 +335,22 @@ def main():
             break
 
         if not has_corrections:
-            content = generate_theme(cfg["ANTHROPIC_API_KEY"], recent_themes + [content["theme_tag"]], include_golden)
+            content = generate_theme(
+                cfg["ANTHROPIC_API_KEY"], recent_themes + [content.get("theme_tag", "")], include_golden,
+            )
         content = sanitize_dashes(content)
 
+    # Filet de sécurité final : même si "approved" est vrai, on ne lance
+    # jamais la fabrication du reel (longue et coûteuse) sur un contenu
+    # auquel il manque un champ obligatoire.
+    if approved:
+        missing = validate_content(content)
+        if missing:
+            log(f"Contenu approuvé mais incomplet (champs manquants : {missing}) -> abandon.")
+            approved = False
+
     if not approved:
-        log("Contenu toujours rejeté après plusieurs tentatives -> ABANDON de ce cycle, rien n'est publié.")
+        log("Contenu toujours rejeté ou incomplet après plusieurs tentatives -> ABANDON de ce cycle, rien n'est publié.")
         return
 
     # --- Étape 2 : fabrication du reel ---
