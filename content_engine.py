@@ -55,6 +55,23 @@ def sanitize_dashes(content):
     return content
 
 
+REQUIRED_CONTENT_FIELDS = [
+    "sujet", "theme_tag", "mood_description", "caption_instagram",
+    "caption_facebook", "engagement_prompt", "hashtags",
+]
+
+
+def validate_content(content):
+    """Vérifie en code (pas en se fiant à une IA) que tous les champs
+    obligatoires sont présents et non vides. Claude peut, malgré le schéma
+    demandé, oublier un champ (ça s'est déjà produit en production avec
+    "caption_instagram" manquant). Sans ce contrôle, le pipeline plante
+    seulement au moment de publier, après avoir déjà fabriqué tout le reel
+    (~1h de travail perdu). Renvoie la liste des champs manquants/vides
+    (liste vide = contenu complet)."""
+    return [f for f in REQUIRED_CONTENT_FIELDS if not content.get(f)]
+
+
 def decide_include_golden(history):
     """Décide, à partir de l'historique, si le couple de Golden Retriever
     apparaît dans le post du jour. Rotation simple et prévisible (1 post sur
