@@ -72,7 +72,7 @@ SIZE = "1024x1536"    # format portrait, cohérent avec un Reel vertical
 QUALITY = "medium"     # moins cher et plus rapide que "high", légère perte de netteté
 
 FPS = 30
-TARGET_DURATION_SECONDS = 65.0  # Tom : "les vidéos doivent durer au moins 1 minute"
+TARGET_DURATION_SECONDS = 30.0  # Tom : 30 secondes, pour des vidéos plus courtes et plus rapides à fabriquer
 TRANSITION_RATIO = 0.6          # durée du fondu = 60% de la durée d'affichage d'une pose
 VIDEO_SIZE = (1080, 1920)
 
@@ -82,7 +82,7 @@ VIDEO_SIZE = (1080, 1920)
 # resterait affichée très longtemps et la vidéo ressemblerait à un diaporama
 # plutôt qu'à un vrai mouvement : on le signale dans les journaux sans bloquer
 # la publication pour autant.
-MIN_RECOMMENDED_POSES = 28
+MIN_RECOMMENDED_POSES = 14
 
 STYLE_SUFFIX = (
     "Style: adorable 3D kawaii chibi render, oversized round head, tiny "
@@ -125,8 +125,8 @@ SCENE_PLAN_TOOL = {
         "properties": {
             "scenes": {
                 "type": "array",
-                "minItems": 3,
-                "maxItems": 5,
+                "minItems": 2,
+                "maxItems": 3,
                 "items": {
                     "type": "object",
                     "properties": {
@@ -139,11 +139,11 @@ SCENE_PLAN_TOOL = {
                         },
                         "poses": {
                             "type": "array",
-                            "minItems": 8,
-                            "maxItems": 12,
+                            "minItems": 6,
+                            "maxItems": 9,
                             "items": {"type": "string"},
                             "description": (
-                                "8 à 12 actions/poses en anglais, décrivant une "
+                                "6 à 9 actions/poses en anglais, décrivant une "
                                 "petite progression fluide et cohérente au sein "
                                 "de cette scène (pas des sauts brusques d'une "
                                 "action à une autre sans rapport)."
@@ -185,12 +185,12 @@ Papattes", mettant en scène un couple de chiens Corgis en 3D kawaii chibi
 Thème du jour : {theme_tag}
 Ambiance : {mood_description}
 
-Découpe cette histoire en 3 à 5 petites scènes (des lieux/moments différents
+Découpe cette histoire en 2 à 3 petites scènes (des lieux/moments différents
 qui s'enchaînent, comme les chapitres d'une petite histoire), chacune avec un
-décor précis et 8 à 12 poses qui font progresser l'action pas à pas (pas de
+décor précis et 6 à 9 poses qui font progresser l'action pas à pas (pas de
 sauts brusques : chaque pose doit être une suite naturelle de la précédente
-au sein de la même scène). Vise environ 40 poses au total pour que la vidéo
-finale dure confortablement plus d'une minute.
+au sein de la même scène). Vise environ 18 à 20 poses au total pour une
+vidéo finale d'environ 30 secondes.
 
 Aucun texte, logo, ou élément écrit ne doit être mentionné dans les
 descriptions (la vidéo est purement visuelle, sans aucun texte à l'écran).
@@ -223,7 +223,8 @@ Toujours positif et mignon : jamais de danger, de tristesse, ou de détresse.
                 print(
                     f"AVERTISSEMENT : seulement {total_poses} poses proposées par "
                     f"OpenAI (recommandé : au moins {MIN_RECOMMENDED_POSES}). La "
-                    "vidéo restera au moins 1 minute (voir _compute_timing), mais "
+                    f"vidéo durera quand même environ {TARGET_DURATION_SECONDS:.0f}s "
+                    "(voir _compute_timing), mais "
                     "chaque pose sera affichée plus longtemps, donnant un rendu "
                     "un peu plus proche du diaporama que du mouvement fluide."
                 )
@@ -352,8 +353,9 @@ def _compute_timing(n_total_frames, target_duration=TARGET_DURATION_SECONDS, tra
     """Calcule le temps d'affichage (hold) et de fondu (transition) de chaque
     pose pour que la vidéo dure TOUJOURS environ target_duration secondes,
     quel que soit le nombre de poses réellement reçu d'OpenAI. C'est ce qui
-    garantit mécaniquement la consigne de Tom ("au moins 1 minute"), plutôt
-    que de compter uniquement sur le respect du nombre de poses demandé."""
+    garantit mécaniquement la durée cible de Tom (TARGET_DURATION_SECONDS),
+    plutôt que de compter uniquement sur le respect du nombre de poses
+    demandé."""
     if n_total_frames <= 1:
         return target_duration, 0.0
     denom = n_total_frames + trans_ratio * (n_total_frames - 1)
